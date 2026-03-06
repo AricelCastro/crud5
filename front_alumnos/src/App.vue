@@ -16,7 +16,7 @@ const nuevoAlumno = ref({
 const editado = ref(false)
 const errores = ref({})
 
-const API = 'http://localhost:8080/alumnos';
+const API = 'http://3.16.23.247/alumnos';
 // =====================
 // Cargar alumnos
 // =====================
