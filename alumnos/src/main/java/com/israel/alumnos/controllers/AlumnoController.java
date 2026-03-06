@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/alumnos")
-@CrossOrigin(origins = "https://alumnoscrud.netlify.app/")
+@CrossOrigin(origins = "*")
 public class AlumnoController {
 
     @Autowired
