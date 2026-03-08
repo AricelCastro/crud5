@@ -1,6 +1,6 @@
 # Proyecto Spring Boot y Vue 3 para Gestión de Alumnos
 
-Este proyecto es una aplicación full-stack que consta de una API RESTful desarrollada con Spring Boot y Java 21, y una interfaz de usuario interactiva construida con Vue 3 y Vite. La aplicación permite gestionar información de alumnos, utilizando MySQL como base de datos.
+Este proyecto es una aplicación full-stack que consta de una API RESTful desarrollada con Spring Boot y Java 21, y una interfaz de usuario interactiva construida con Vue 3 y Vite. La aplicación permite gestionar información de alumnos. En desarrollo local usa H2 persistente (archivo), y para nube puede usar MySQL (Azure).
 
 
 Consulta el archivo [`alumnos/src/main/java/com/israel/alumnos/controllers/AlumnoController.java`](alumnos/src/main/java/com/israel/alumnos/controllers/AlumnoController.java) para ver todos los endpoints disponibles.
@@ -31,7 +31,8 @@ A continuación, se muestran algunas capturas de pantalla de la aplicación:
     *   Interfaz reactiva y amigable.
     *   Ubicado en el directorio `front_alumnos/`.
 *   **Base de Datos**:
-    *   MySQL para la persistencia de datos.
+    *   H2 persistente para desarrollo local.
+    *   Perfil Azure listo para MySQL Flexible Server.
 
 ## Requisitos Previos
 
@@ -40,23 +41,29 @@ Asegúrate de tener instalados los siguientes programas:
 *   JDK 21 o superior.
 *   Maven 3.x.
 *   Node.js (que incluye npm) versión 18.x o superior.
-*   MySQL Server.
+*   MySQL Server (solo si usarás el perfil Azure/MySQL).
 
 ## Configuración
 
 ### Backend (Spring Boot API - `alumnos/`)
 
-1.  **Configuración de la Base de Datos**:
-    *   Abre el archivo `alumnos/src/main/resources/application.properties`.
-    *   Modifica las siguientes propiedades para que coincidan con tu configuración de MySQL:
-        ```properties
-        spring.datasource.url=jdbc:mysql://localhost:3306/alumnos_tec
-        spring.datasource.username=tu_usuario_mysql
-        spring.datasource.password=tu_contraseña_mysql
-        ```
-    *   Asegúrate de que la base de datos `alumnos_tec` exista en tu servidor MySQL, o créala. Spring Boot intentará actualizar el esquema con `spring.jpa.hibernate.ddl-auto=update`.
+1.  **Configuración de Base de Datos (local por defecto)**:
+    *   El backend usa `application-local.properties` automáticamente.
+    *   La base local se crea sola en `alumnos/data/alumnosdb.mv.db`.
+    *   No necesitas instalar MySQL para desarrollo local.
 
-2.  **Ejecutar la API**:
+2.  **Configurar Azure (opcional)**:
+    *   Edita variables para `application-azure.properties`:
+        * `AZURE_DB_URL`
+        * `AZURE_DB_USERNAME`
+        * `AZURE_DB_PASSWORD`
+    *   Ejecuta el backend con perfil Azure:
+        ```cmd
+        set SPRING_PROFILES_ACTIVE=azure
+        mvnw.cmd spring-boot:run
+        ```
+
+3.  **Ejecutar la API**:
     *   Navega al directorio `alumnos/` en tu terminal.
     *   Ejecuta el siguiente comando Maven para iniciar la aplicación Spring Boot:
         ```sh
@@ -66,7 +73,7 @@ Asegúrate de tener instalados los siguientes programas:
         ```cmd
         mvnw.cmd spring-boot:run
         ```
-    *   La API estará disponible en `http://localhost:8080`.
+    *   La API estará disponible en `http://localhost:8081`.
 
 ### Frontend (Vue 3 - `front_alumnos/`)
 

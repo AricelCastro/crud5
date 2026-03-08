@@ -17,7 +17,33 @@ const nuevoAlumno = ref({
 const editado = ref(false)
 const errores = ref({})
 
-const API = 'http://3.16.23.247/alumnos';
+const API = 'http://localhost:8081/alumnos';
+
+const normalizarTexto = (valor) =>
+  valor
+    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trimStart()
+
+const normalizarTelefono = (valor) => valor.replace(/\D/g, '').slice(0, 10)
+
+const normalizarUrl = (valor) => valor.replace(/\s/g, '')
+
+const manejarNombreInput = (event) => {
+  nuevoAlumno.value.nombre = normalizarTexto(event.target.value)
+}
+
+const manejarApellidoInput = (event) => {
+  nuevoAlumno.value.apellido = normalizarTexto(event.target.value)
+}
+
+const manejarTelefonoInput = (event) => {
+  nuevoAlumno.value.telefono = normalizarTelefono(event.target.value)
+}
+
+const manejarImagenUrlInput = (event) => {
+  nuevoAlumno.value.imagenURL = normalizarUrl(event.target.value)
+}
 // =====================
 // Cargar alumnos
 // =====================
@@ -42,6 +68,15 @@ const validarFormulario = () => {
 
   if (!nuevoAlumno.value.apellido.trim()) {
     errores.value.apellido = "El campo es obligatorio"
+  } else {
+    const cantidadApellidos = nuevoAlumno.value.apellido
+      .trim()
+      .split(/\s+/)
+      .length
+
+    if (cantidadApellidos < 2) {
+      errores.value.apellido = "Debes ingresar dos apellidos"
+    }
   }
 
   if (!nuevoAlumno.value.carrera.trim()) {
@@ -77,17 +112,35 @@ const agregarAlumno = async () => {
   }
 
   try {
+    const payload = {
+      ...nuevoAlumno.value,
+      nombre: nuevoAlumno.value.nombre.trim(),
+      apellido: nuevoAlumno.value.apellido.trim(),
+      carrera: nuevoAlumno.value.carrera.trim(),
+      telefono: nuevoAlumno.value.telefono.trim(),
+      imagenURL: nuevoAlumno.value.imagenURL.trim()
+    }
+
     if (editado.value) {
-      await axios.put(
+      const { data } = await axios.put(
         `${API}/editar-alumnos/${nuevoAlumno.value.id}`,
-        nuevoAlumno.value
+        payload
       )
+
+      const alumnoActualizado = data || { ...payload, id: nuevoAlumno.value.id }
+      alumnos.value = alumnos.value.map((alumno) =>
+        alumno.id === nuevoAlumno.value.id ? alumnoActualizado : alumno
+      )
+
       editado.value = false
     } else {
-      await axios.post(
+      const { data } = await axios.post(
         `${API}/insertar-alumnos`,
-        nuevoAlumno.value
+        payload
       )
+
+      const alumnoCreado = data || { ...payload, id: Date.now() }
+      alumnos.value = [...alumnos.value, alumnoCreado]
 
       Swal.fire({
         icon: 'success',
@@ -96,8 +149,6 @@ const agregarAlumno = async () => {
         timer: 1500
       })
     }
-
-    await cargarAlumnos()
 
     nuevoAlumno.value = {
       nombre: '',
@@ -181,7 +232,9 @@ onMounted(cargarAlumnos)
                 <input type="text"
                        class="form-control"
                        :class="{ 'is-invalid': errores.nombre }"
-                       v-model="nuevoAlumno.nombre">
+                    v-model="nuevoAlumno.nombre"
+                    @input="manejarNombreInput"
+                    maxlength="50">
                 <small class="text-danger" v-if="errores.nombre">
                   {{ errores.nombre }}
                 </small>
@@ -189,11 +242,13 @@ onMounted(cargarAlumnos)
 
               <!-- Apellido -->
               <div class="col-md-6 mb-3">
-                <label class="form-label">Apellidos</label>
+                  <label class="form-label">Apellidos (paterno y materno)</label>
                 <input type="text"
                        class="form-control"
                        :class="{ 'is-invalid': errores.apellido }"
-                       v-model="nuevoAlumno.apellido">
+                    v-model="nuevoAlumno.apellido"
+                    @input="manejarApellidoInput"
+                    maxlength="70">
                 <small class="text-danger" v-if="errores.apellido">
                   {{ errores.apellido }}
                 </small>
@@ -223,11 +278,16 @@ onMounted(cargarAlumnos)
               <!-- Teléfono -->
               <div class="col-md-6 mb-3">
                 <label class="form-label">Teléfono</label>
-                <input type="text"
-                       class="form-control"
-                       :class="{ 'is-invalid': errores.telefono }"
-                       v-model="nuevoAlumno.telefono"
-                       inputmode="numeric">
+                <div class="input-group">
+                  <span class="input-group-text">+52</span>
+                  <input type="text"
+                         class="form-control"
+                         :class="{ 'is-invalid': errores.telefono }"
+                         v-model="nuevoAlumno.telefono"
+                         @input="manejarTelefonoInput"
+                         inputmode="numeric"
+                         maxlength="10">
+                </div>
                 <small class="text-danger" v-if="errores.telefono">
                   {{ errores.telefono }}
                 </small>
@@ -239,7 +299,9 @@ onMounted(cargarAlumnos)
                 <input type="text"
                        class="form-control"
                        :class="{ 'is-invalid': errores.imagenURL }"
-                       v-model="nuevoAlumno.imagenURL">
+                    v-model="nuevoAlumno.imagenURL"
+                    @input="manejarImagenUrlInput"
+                    maxlength="255">
                 <small class="text-danger" v-if="errores.imagenURL">
                   {{ errores.imagenURL }}
                 </small>
