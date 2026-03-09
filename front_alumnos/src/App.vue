@@ -113,12 +113,13 @@ const agregarAlumno = async () => {
 
   try {
     const payload = {
-      ...nuevoAlumno.value,
       nombre: nuevoAlumno.value.nombre.trim(),
       apellido: nuevoAlumno.value.apellido.trim(),
       carrera: nuevoAlumno.value.carrera.trim(),
       telefono: nuevoAlumno.value.telefono.trim(),
-      imagenURL: nuevoAlumno.value.imagenURL.trim()
+      imagenURL: nuevoAlumno.value.imagenURL.trim(),
+      numeroControl: '',
+      email: ''
     }
 
     if (editado.value) {
@@ -140,9 +141,9 @@ const agregarAlumno = async () => {
       )
 
       const alumnoCreado = data || { ...payload, id: Date.now() }
+    
       alumnos.value = [...alumnos.value, alumnoCreado]
-
-      Swal.fire({
+Swal.fire({
         icon: 'success',
         title: 'Alumno agregado correctamente',
         showConfirmButton: false,
@@ -161,6 +162,7 @@ const agregarAlumno = async () => {
     errores.value = {}
 
   } catch (error) {
+    console.error('Error al guardar:', error.response?.data || error.message)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -205,6 +207,7 @@ const eliminarAlumnoPorId = async (id) => {
       'success'
     )
   } catch (error) {
+    console.error('Error al eliminar:', error.response?.data || error.message)
     Swal.fire({
       icon: 'error',
       title: 'Error',

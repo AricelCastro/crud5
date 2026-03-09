@@ -2,9 +2,8 @@ import axios from 'axios';
 
 export const http = axios.create({
   
-  // baseURL: 'http://10.0.2.2:8080/alumnos',
+  baseURL: 'http://localhost:8081/alumnos',
 
-  baseURL: 'http://3.16.23.247:8080/alumnos',
   timeout: 10000,
 });
 

@@ -27,7 +27,7 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -99,20 +99,20 @@
 				<version>2.13.0</version>
 				<configuration>
 					<schemaVersion>v2</schemaVersion>
-					<subscriptionId>TU_SUBSCRIPTION_ID</subscriptionId>
+					<subscriptionId>fcb091c4-8acd-4ab1-9b5f-24d2a1811a8d</subscriptionId>
 					<resourceGroup>rg-alumnos-crud</resourceGroup>
 					<appName>alumnos-crud-api</appName>
 					<region>eastus</region>
 					<pricingTier>F1</pricingTier>
 					<runtime>
 						<os>Linux</os>
-						<javaVersion>Java 21</javaVersion>
+						<javaVersion>Java 17</javaVersion>
 						<webContainer>Java SE</webContainer>
 					</runtime>
 					<appSettings>
 						<property>
 							<name>SPRING_PROFILES_ACTIVE</name>
-							<value>h2cloud</value>
+							<value>azure</value>
 						</property>
 					</appSettings>
 					<deployment>
