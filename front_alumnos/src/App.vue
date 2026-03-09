@@ -1,8 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import Swal from 'sweetalert2'
-import { initializeApp } from "firebase/app"
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore"
+import { 
+  initializeApp 
+} from "firebase/app"
+import { 
+  getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc 
+} from "firebase/firestore"
 
 // =====================
 // Configuración Firebase
@@ -18,7 +22,7 @@ const firebaseConfig = {
 }
 
 const app = initializeApp(firebaseConfig)
-export const db = getFirestore(app)
+const db = getFirestore(app)
 
 // =====================
 // Variables reactivas
@@ -26,6 +30,7 @@ export const db = getFirestore(app)
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
+  id: '',
   nombre: '',
   apellido: '',
   carrera: '',
@@ -39,13 +44,15 @@ const errores = ref({})
 const alumnosRef = collection(db, 'alumnos')
 
 // =====================
-// Cargar alumnos
+// Funciones
 // =====================
+
+// Cargar alumnos desde Firestore
 const cargarAlumnos = async () => {
   try {
     const querySnapshot = await getDocs(alumnosRef)
     alumnos.value = querySnapshot.docs.map(doc => ({
-      id: doc.id,
+      id: doc.id,   // ID generado por Firebase
       ...doc.data()
     }))
   } catch (error) {
@@ -53,40 +60,26 @@ const cargarAlumnos = async () => {
   }
 }
 
-// =====================
-// Validación
-// =====================
+// Validación del formulario
 const validarFormulario = () => {
   errores.value = {}
 
-  if (!nuevoAlumno.value.nombre.trim()) {
-    errores.value.nombre = "El campo es obligatorio"
-  }
-
+  if (!nuevoAlumno.value.nombre.trim()) errores.value.nombre = "El campo es obligatorio"
+  
   if (!nuevoAlumno.value.apellido.trim()) {
     errores.value.apellido = "El campo es obligatorio"
-  } else {
-    const cantidadApellidos =
-      nuevoAlumno.value.apellido.trim().split(/\s+/).length
-    if (cantidadApellidos < 2) {
-      errores.value.apellido = "Debes ingresar dos apellidos"
-    }
+  } else if (nuevoAlumno.value.apellido.trim().split(/\s+/).length < 2) {
+    errores.value.apellido = "Debes ingresar dos apellidos"
   }
 
-  if (!nuevoAlumno.value.carrera.trim()) {
-    errores.value.carrera = "Seleccione una carrera"
-  }
-
-  if (!/^\d{10}$/.test(nuevoAlumno.value.telefono)) {
-    errores.value.telefono = "El teléfono debe tener 10 dígitos"
-  }
+  if (!nuevoAlumno.value.carrera.trim()) errores.value.carrera = "Seleccione una carrera"
+  
+  if (!/^\d{10}$/.test(nuevoAlumno.value.telefono)) errores.value.telefono = "El teléfono debe tener 10 dígitos"
 
   return Object.keys(errores.value).length === 0
 }
 
-// =====================
-// Guardar / Editar Alumno
-// =====================
+// Guardar o actualizar alumno
 const guardarAlumno = async () => {
   if (!validarFormulario()) {
     Swal.fire({
@@ -99,20 +92,18 @@ const guardarAlumno = async () => {
 
   try {
     if (editado.value) {
-      // Editar alumno
       const docRef = doc(db, 'alumnos', nuevoAlumno.value.id)
       await updateDoc(docRef, { ...nuevoAlumno.value })
       Swal.fire('Actualizado', 'Alumno actualizado correctamente', 'success')
       editado.value = false
     } else {
-      // Agregar nuevo alumno
       const { ...data } = nuevoAlumno.value
       await addDoc(alumnosRef, data)
       Swal.fire('Guardado', 'Alumno agregado correctamente', 'success')
     }
 
     // Limpiar formulario y recargar alumnos
-    nuevoAlumno.value = { nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
+    nuevoAlumno.value = { id:'', nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
     cargarAlumnos()
 
   } catch (error) {
@@ -121,17 +112,13 @@ const guardarAlumno = async () => {
   }
 }
 
-// =====================
 // Editar alumno
-// =====================
-const editarAlumnos = (alumno) => {
+const editarAlumno = (alumno) => {
   nuevoAlumno.value = { ...alumno }
   editado.value = true
 }
 
-// =====================
 // Eliminar alumno
-// =====================
 const eliminarAlumno = async (id) => {
   Swal.fire({
     title: '¿Estás seguro?',
@@ -155,7 +142,7 @@ const eliminarAlumno = async (id) => {
 }
 
 // =====================
-// Cargar alumnos al iniciar
+// Ejecutar al iniciar
 // =====================
 onMounted(cargarAlumnos)
 </script>
@@ -245,8 +232,8 @@ onMounted(cargarAlumnos)
             <td>{{ alumno.telefono }}</td>
             <td><img v-if="alumno.imagenURL" :src="alumno.imagenURL" width="50"></td>
             <td>
-              <button class="btn btn-danger mx-2" @click="eliminarAlumno(alumno.id)">🗑</button>
-              <button class="btn btn-warning" @click="editarAlumnos(alumno)">✏</button>
+              <button class="btn btn-warning mx-2" @click="editarAlumno(alumno)">✏</button>
+              <button class="btn btn-danger" @click="eliminarAlumno(alumno.id)">🗑</button>
             </td>
           </tr>
         </tbody>
