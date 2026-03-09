@@ -1,28 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import Swal from 'sweetalert2'
-import { 
-  initializeApp 
-} from "firebase/app"
-import { 
-  getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc 
-} from "firebase/firestore"
-
-// =====================
-// Configuración Firebase
-// =====================
-const firebaseConfig = {
-  apiKey: "AIzaSyAGoLg3EjfI6IXy7H5DRKgPzx3osmP9vr8",
-  authDomain: "registro-a3b4a.firebaseapp.com",
-  projectId: "registro-a3b4a",
-  storageBucket: "registro-a3b4a.firebasestorage.app",
-  messagingSenderId: "165715388209",
-  appId: "1:165715388209:web:3765060690f9a5efcc7210",
-  measurementId: "G-4XJ82F9ZE1"
-}
-
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+import { db } from './firebase'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
 
 // =====================
 // Variables reactivas
@@ -30,7 +10,7 @@ const db = getFirestore(app)
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
-  id: '',
+  id: null,
   nombre: '',
   apellido: '',
   carrera: '',
@@ -40,23 +20,25 @@ const nuevoAlumno = ref({
 
 const editado = ref(false)
 const errores = ref({})
-
-const alumnosRef = collection(db, 'alumnos')
+let unsubscribe = null
 
 // =====================
 // Funciones
 // =====================
 
-// Cargar alumnos desde Firestore
-const cargarAlumnos = async () => {
+// Cargar alumnos desde Firebase Firestore (en tiempo real)
+const cargarAlumnos = () => {
   try {
-    const querySnapshot = await getDocs(alumnosRef)
-    alumnos.value = querySnapshot.docs.map(doc => ({
-      id: doc.id,   // ID generado por Firebase
-      ...doc.data()
-    }))
+    const alumnosCollection = collection(db, 'alumnos')
+    unsubscribe = onSnapshot(alumnosCollection, (snapshot) => {
+      alumnos.value = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    })
   } catch (error) {
-    console.error(error)
+    console.error('Error al cargar alumnos:', error)
+    Swal.fire('Error', 'No se pudieron cargar los alumnos', 'error')
   }
 }
 
@@ -91,24 +73,38 @@ const guardarAlumno = async () => {
   }
 
   try {
+    const alumnosCollection = collection(db, 'alumnos')
+    
     if (editado.value) {
+      // Actualizar alumno existente
       const docRef = doc(db, 'alumnos', nuevoAlumno.value.id)
-      await updateDoc(docRef, { ...nuevoAlumno.value })
-      Swal.fire('Actualizado', 'Alumno actualizado correctamente', 'success')
+      await updateDoc(docRef, {
+        nombre: nuevoAlumno.value.nombre,
+        apellido: nuevoAlumno.value.apellido,
+        carrera: nuevoAlumno.value.carrera,
+        telefono: nuevoAlumno.value.telefono,
+        imagenURL: nuevoAlumno.value.imagenURL
+      })
+      Swal.fire('¡Actualizado!', 'Alumno actualizado correctamente', 'success')
       editado.value = false
     } else {
-      const { ...data } = nuevoAlumno.value
-      await addDoc(alumnosRef, data)
-      Swal.fire('Guardado', 'Alumno agregado correctamente', 'success')
+      // Crear nuevo alumno
+      await addDoc(alumnosCollection, {
+        nombre: nuevoAlumno.value.nombre,
+        apellido: nuevoAlumno.value.apellido,
+        carrera: nuevoAlumno.value.carrera,
+        telefono: nuevoAlumno.value.telefono,
+        imagenURL: nuevoAlumno.value.imagenURL
+      })
+      Swal.fire('¡Guardado!', 'Alumno agregado correctamente', 'success')
     }
 
-    // Limpiar formulario y recargar alumnos
-    nuevoAlumno.value = { id:'', nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
-    cargarAlumnos()
+    // Limpiar formulario
+    nuevoAlumno.value = { id: null, nombre: '', apellido: '', carrera: '', telefono: '', imagenURL: '' }
 
   } catch (error) {
-    console.error(error)
-    Swal.fire('Error', 'Ocurrió un error al guardar', 'error')
+    console.error('Error al guardar:', error)
+    Swal.fire('Error', 'Ocurrió un error al guardar: ' + error.message, 'error')
   }
 }
 
@@ -131,20 +127,22 @@ const eliminarAlumno = async (id) => {
       try {
         const docRef = doc(db, 'alumnos', id)
         await deleteDoc(docRef)
-        await cargarAlumnos()
-        Swal.fire('Eliminado!', 'El alumno ha sido eliminado.', 'success')
+        Swal.fire('¡Eliminado!', 'El alumno ha sido eliminado.', 'success')
       } catch (error) {
-        console.error(error)
-        Swal.fire('Error', 'No se pudo eliminar el alumno.', 'error')
+        console.error('Error al eliminar:', error)
+        Swal.fire('Error', 'No se pudo eliminar el alumno: ' + error.message, 'error')
       }
     }
   })
 }
 
 // =====================
-// Ejecutar al iniciar
+// Ejecutar al iniciar y limpiar
 // =====================
 onMounted(cargarAlumnos)
+onUnmounted(() => {
+  if (unsubscribe) unsubscribe()
+})
 </script>
 
 <template>
