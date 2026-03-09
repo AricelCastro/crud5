@@ -1,13 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import Swal from 'sweetalert2'
-
-// Firebase
 import { initializeApp } from "firebase/app"
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore"
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore"
 
 // =====================
-// Config Firebase
+// Configuración Firebase
 // =====================
 const firebaseConfig = {
   apiKey: "AIzaSyAGoLg3EjfI6IXy7H5DRKgPzx3osmP9vr8",
@@ -15,20 +13,19 @@ const firebaseConfig = {
   projectId: "registro-a3b4a",
   storageBucket: "registro-a3b4a.firebasestorage.app",
   messagingSenderId: "165715388209",
-  appId: "1:165715388209:web:3765060692f9a5efcc7210",
+  appId: "1:165715388209:web:3765060690f9a5efcc7210",
   measurementId: "G-4XJ82F9ZE1"
 }
 
 const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+export const db = getFirestore(app)
 
 // =====================
-// Variables
+// Variables reactivas
 // =====================
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
-  id: null,
   nombre: '',
   apellido: '',
   carrera: '',
@@ -37,8 +34,8 @@ const nuevoAlumno = ref({
 })
 
 const editado = ref(false)
+const errores = ref({})
 
-// Referencia a la colección
 const alumnosRef = collection(db, 'alumnos')
 
 // =====================
@@ -46,53 +43,78 @@ const alumnosRef = collection(db, 'alumnos')
 // =====================
 const cargarAlumnos = async () => {
   try {
-    const snapshot = await getDocs(alumnosRef)
-    alumnos.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+    const querySnapshot = await getDocs(alumnosRef)
+    alumnos.value = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
   } catch (error) {
     console.error(error)
-    Swal.fire('Error', 'No se pudieron cargar los alumnos', 'error')
   }
 }
 
 // =====================
-// Validar formulario
+// Validación
 // =====================
 const validarFormulario = () => {
-  const { nombre, apellido, carrera, telefono } = nuevoAlumno.value
-  if (!nombre || !apellido || !carrera || !telefono) {
-    Swal.fire('Error', 'Todos los campos son obligatorios', 'error')
-    return false
+  errores.value = {}
+
+  if (!nuevoAlumno.value.nombre.trim()) {
+    errores.value.nombre = "El campo es obligatorio"
   }
-  if (!/^\d{10}$/.test(telefono)) {
-    Swal.fire('Error', 'Teléfono inválido', 'error')
-    return false
+
+  if (!nuevoAlumno.value.apellido.trim()) {
+    errores.value.apellido = "El campo es obligatorio"
+  } else {
+    const cantidadApellidos =
+      nuevoAlumno.value.apellido.trim().split(/\s+/).length
+    if (cantidadApellidos < 2) {
+      errores.value.apellido = "Debes ingresar dos apellidos"
+    }
   }
-  if (apellido.trim().split(/\s+/).length < 2) {
-    Swal.fire('Error', 'Debe ingresar dos apellidos', 'error')
-    return false
+
+  if (!nuevoAlumno.value.carrera.trim()) {
+    errores.value.carrera = "Seleccione una carrera"
   }
-  return true
+
+  if (!/^\d{10}$/.test(nuevoAlumno.value.telefono)) {
+    errores.value.telefono = "El teléfono debe tener 10 dígitos"
+  }
+
+  return Object.keys(errores.value).length === 0
 }
 
 // =====================
-// Guardar alumno
+// Guardar / Editar Alumno
 // =====================
 const guardarAlumno = async () => {
-  if (!validarFormulario()) return
+  if (!validarFormulario()) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Formulario inválido',
+      text: 'Por favor corrige los errores'
+    })
+    return
+  }
 
   try {
     if (editado.value) {
+      // Editar alumno
       const docRef = doc(db, 'alumnos', nuevoAlumno.value.id)
       await updateDoc(docRef, { ...nuevoAlumno.value })
       Swal.fire('Actualizado', 'Alumno actualizado correctamente', 'success')
       editado.value = false
     } else {
-      await addDoc(alumnosRef, { ...nuevoAlumno.value })
+      // Agregar nuevo alumno
+      const { ...data } = nuevoAlumno.value
+      await addDoc(alumnosRef, data)
       Swal.fire('Guardado', 'Alumno agregado correctamente', 'success')
     }
 
-    nuevoAlumno.value = { id: null, nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
+    // Limpiar formulario y recargar alumnos
+    nuevoAlumno.value = { nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
     cargarAlumnos()
+
   } catch (error) {
     console.error(error)
     Swal.fire('Error', 'Ocurrió un error al guardar', 'error')
@@ -102,7 +124,7 @@ const guardarAlumno = async () => {
 // =====================
 // Editar alumno
 // =====================
-const editarAlumno = (alumno) => {
+const editarAlumnos = (alumno) => {
   nuevoAlumno.value = { ...alumno }
   editado.value = true
 }
@@ -111,52 +133,60 @@ const editarAlumno = (alumno) => {
 // Eliminar alumno
 // =====================
 const eliminarAlumno = async (id) => {
-  const result = await Swal.fire({
-    title: '¿Eliminar alumno?',
+  Swal.fire({
+    title: '¿Estás seguro?',
+    text: "No podrás revertir esto",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Sí, eliminar'
-  })
-
-  if (result.isConfirmed) {
-    try {
-      await deleteDoc(doc(db, 'alumnos', id))
-      Swal.fire('Eliminado', 'Alumno eliminado correctamente', 'success')
-      cargarAlumnos()
-    } catch (error) {
-      console.error(error)
-      Swal.fire('Error', 'No se pudo eliminar el alumno', 'error')
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const docRef = doc(db, 'alumnos', id)
+        await deleteDoc(docRef)
+        await cargarAlumnos()
+        Swal.fire('Eliminado!', 'El alumno ha sido eliminado.', 'success')
+      } catch (error) {
+        console.error(error)
+        Swal.fire('Error', 'No se pudo eliminar el alumno.', 'error')
+      }
     }
-  }
+  })
 }
 
 // =====================
-// Cargar al iniciar
+// Cargar alumnos al iniciar
 // =====================
 onMounted(cargarAlumnos)
 </script>
 
 <template>
 <div class="container mt-4">
+
   <!-- FORMULARIO -->
   <div class="card shadow p-4 mb-4">
     <h2 class="text-center mb-4">Formulario de Alumnos</h2>
-
     <form @submit.prevent="guardarAlumno">
       <div class="row">
+
+        <!-- Nombre -->
         <div class="col-md-6 mb-3">
           <label class="form-label">Nombre</label>
-          <input type="text" class="form-control" v-model="nuevoAlumno.nombre" maxlength="50">
+          <input type="text" class="form-control" :class="{ 'is-invalid': errores.nombre }" v-model="nuevoAlumno.nombre" maxlength="50">
+          <small class="text-danger" v-if="errores.nombre">{{ errores.nombre }}</small>
         </div>
 
+        <!-- Apellidos -->
         <div class="col-md-6 mb-3">
           <label class="form-label">Apellidos (paterno y materno)</label>
-          <input type="text" class="form-control" v-model="nuevoAlumno.apellido" maxlength="70">
+          <input type="text" class="form-control" :class="{ 'is-invalid': errores.apellido }" v-model="nuevoAlumno.apellido" maxlength="70">
+          <small class="text-danger" v-if="errores.apellido">{{ errores.apellido }}</small>
         </div>
 
+        <!-- Carrera -->
         <div class="col-md-6 mb-3">
           <label class="form-label">Carrera</label>
-          <select class="form-select" v-model="nuevoAlumno.carrera">
+          <select class="form-select" :class="{ 'is-invalid': errores.carrera }" v-model="nuevoAlumno.carrera">
             <option value="" disabled>Seleccione una carrera</option>
             <option>Ingeniería en Sistemas Computacionales</option>
             <option>Ingeniería Industrial</option>
@@ -165,29 +195,32 @@ onMounted(cargarAlumnos)
             <option>Ingeniería en Mecatrónica</option>
             <option>Ingeniería en Gestión Empresarial</option>
           </select>
+          <small class="text-danger" v-if="errores.carrera">{{ errores.carrera }}</small>
         </div>
 
+        <!-- Teléfono -->
         <div class="col-md-6 mb-3">
           <label class="form-label">Teléfono</label>
           <div class="input-group">
             <span class="input-group-text">+52</span>
-            <input type="text" class="form-control" v-model="nuevoAlumno.telefono" maxlength="10">
+            <input type="text" class="form-control" :class="{ 'is-invalid': errores.telefono }" v-model="nuevoAlumno.telefono" maxlength="10">
           </div>
+          <small class="text-danger" v-if="errores.telefono">{{ errores.telefono }}</small>
         </div>
 
+        <!-- Imagen URL -->
         <div class="col-md-6 mb-3">
           <label class="form-label">Imagen URL</label>
           <input type="text" class="form-control" v-model="nuevoAlumno.imagenURL">
         </div>
+
       </div>
 
-      <button type="submit" class="btn btn-primary">
-        {{ editado ? 'Actualizar Alumno' : 'Agregar Alumno' }}
-      </button>
+      <button type="submit" class="btn btn-primary">{{ editado ? 'Actualizar Alumno' : 'Agregar Alumno' }}</button>
     </form>
   </div>
 
-  <!-- TABLA -->
+  <!-- TABLA DE ALUMNOS -->
   <div class="card shadow">
     <div class="card-body">
       <h5 class="mb-3">Lista de Alumnos</h5>
@@ -210,18 +243,17 @@ onMounted(cargarAlumnos)
             <td>{{ alumno.apellido }}</td>
             <td>{{ alumno.carrera }}</td>
             <td>{{ alumno.telefono }}</td>
-            <td>
-              <img v-if="alumno.imagenURL" :src="alumno.imagenURL" width="50">
-            </td>
+            <td><img v-if="alumno.imagenURL" :src="alumno.imagenURL" width="50"></td>
             <td>
               <button class="btn btn-danger mx-2" @click="eliminarAlumno(alumno.id)">🗑</button>
-              <button class="btn btn-warning" @click="editarAlumno(alumno)">✏</button>
+              <button class="btn btn-warning" @click="editarAlumnos(alumno)">✏</button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+
 </div>
 </template>
 
