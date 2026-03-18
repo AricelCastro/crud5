@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: crud-alumnos-frontend
+    env: static
+    buildCommand: cd front_alumnos && npm install && npm run build
+    staticPublishPath: front_alumnos/dist
