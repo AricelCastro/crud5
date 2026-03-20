@@ -1,16 +1,110 @@
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import Swal from 'sweetalert2'
-import { db } from './firebase'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore'
+<template>
+  <div class="container" style="max-width:700px">
+    <!-- Formulario -->
+    <div class="card shadow p-3 mt-4">
+      <h2 class="text-center mb-3">Formulario de Alumnos</h2>
+      <form @submit.prevent="agregarAlumno">
+        <div class="row g-2">
 
-// =====================
-// Variables reactivas
-// =====================
+          <!-- Nombre -->
+          <div class="col-md-6">
+            <label class="form-label">Nombre</label>
+            <input type="text"
+                   class="form-control"
+                   :class="{ 'is-invalid': errores.nombre }"
+                   v-model="nuevoAlumno.nombre">
+            <small class="text-danger" v-if="errores.nombre">{{ errores.nombre }}</small>
+          </div>
+
+          <!-- Apellidos -->
+          <div class="col-md-6">
+            <label class="form-label">Apellidos</label>
+            <input type="text"
+                   class="form-control"
+                   :class="{ 'is-invalid': errores.apellido }"
+                   v-model="nuevoAlumno.apellido">
+            <small class="text-danger" v-if="errores.apellido">{{ errores.apellido }}</small>
+          </div>
+
+          <!-- Carrera -->
+          <div class="col-md-6">
+            <label class="form-label">Carrera</label>
+            <select class="form-select"
+                    :class="{ 'is-invalid': errores.carrera }"
+                    v-model="nuevoAlumno.carrera">
+              <option value="" disabled>Seleccione una carrera</option>
+              <option value="Ingeniería en Sistemas Computacionales">Ingeniería en Sistemas Computacionales</option>
+              <option value="Ingeniería Industrial">Ingeniería Industrial</option>
+              <option value="Licenciatura en Contaduría">Licenciatura en Contaduría</option>
+              <option value="Licenciatura en Administración">Licenciatura en Administración</option>
+              <option value="Ingeniería en Mecatrónica">Ingeniería en Mecatrónica</option>
+              <option value="Ingeniería en Gestión Empresarial">Ingeniería en Gestión</option>
+            </select>
+            <small class="text-danger" v-if="errores.carrera">{{ errores.carrera }}</small>
+          </div>
+
+         <!-- Teléfono -->
+<div class="col-md-6">
+  <label class="form-label">Teléfono</label>
+  <input type="text"
+         class="form-control"
+         :class="{ 'is-invalid': errores.telefono }"
+         v-model="nuevoAlumno.telefono"
+         maxlength="12"          
+         @input="nuevoAlumno.telefono = nuevoAlumno.telefono.replace(/\D/g,'').slice(0,12)">
+  <small class="text-danger" v-if="errores.telefono">{{ errores.telefono }}</small>
+</div>
+
+                </div>
+
+        <button type="submit" class="btn btn-primary mt-3 w-100">
+          {{ editado ? 'Actualizar Alumno' : 'Agregar Alumno' }}
+        </button>
+      </form>
+    </div>
+
+    <!-- Tabla de Alumnos -->
+    <div class="card shadow mt-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Lista de Alumnos</h5>
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>Carrera</th>
+              <th>Teléfono</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="alumno in alumnos" :key="alumno.id">
+              
+              <td>{{ alumno.nombre }}</td>
+              <td>{{ alumno.apellido }}</td>
+              <td>{{ alumno.carrera }}</td>
+              <td>{{ formatTelefono(alumno.telefono) }}</td>
+             
+              <td>
+                <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
+                <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, watch } from 'vue'
+import axios from 'axios'
+import Swal from 'sweetalert2'
+
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
-  id: null,
   nombre: '',
   apellido: '',
   carrera: '',
@@ -20,101 +114,99 @@ const nuevoAlumno = ref({
 
 const editado = ref(false)
 const errores = ref({})
-let unsubscribe = null
+
+const API = 'http://localhost:8080/alumnos'
 
 // =====================
-// Funciones
+// Cargar alumnos
 // =====================
-
-// Cargar alumnos desde Firebase Firestore (en tiempo real)
-const cargarAlumnos = () => {
+const cargarAlumnos = async () => {
   try {
-    const alumnosCollection = collection(db, 'alumnos')
-    unsubscribe = onSnapshot(alumnosCollection, (snapshot) => {
-      alumnos.value = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-    })
+    const response = await axios.get(`${API}/traer-alumnos`)
+    alumnos.value = response.data
   } catch (error) {
-    console.error('Error al cargar alumnos:', error)
-    Swal.fire('Error', 'No se pudieron cargar los alumnos', 'error')
+    console.error(error)
   }
 }
 
-// Validación del formulario
+// =====================
+// Validación
+// =====================
 const validarFormulario = () => {
   errores.value = {}
 
-  if (!nuevoAlumno.value.nombre.trim()) errores.value.nombre = "El campo es obligatorio"
-  
-  if (!nuevoAlumno.value.apellido.trim()) {
-    errores.value.apellido = "El campo es obligatorio"
-  } else if (nuevoAlumno.value.apellido.trim().split(/\s+/).length < 2) {
-    errores.value.apellido = "Debes ingresar dos apellidos"
+  if (!nuevoAlumno.value.nombre.trim()) {
+    errores.value.nombre = "El campo es obligatorio"
+  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(nuevoAlumno.value.nombre)) {
+    errores.value.nombre = "Solo se permiten letras"
   }
 
-  if (!nuevoAlumno.value.carrera.trim()) errores.value.carrera = "Seleccione una carrera"
-  
-  if (!/^\d{10}$/.test(nuevoAlumno.value.telefono)) errores.value.telefono = "El teléfono debe tener 10 dígitos"
+  if (!nuevoAlumno.value.apellido.trim()) {
+    errores.value.apellido = "El campo es obligatorio"
+  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ]+\s[a-zA-ZÁÉÍÓÚáéíóúÑñ]+$/.test(nuevoAlumno.value.apellido)) {
+    errores.value.apellido = "Debe ser solo dos palabras, solo letras"
+  }
 
+  if (!nuevoAlumno.value.carrera.trim()) {
+    errores.value.carrera = "El campo es obligatorio"
+  }
+
+  if (!/^(?:\+52|52)?\d{10}$/.test(nuevoAlumno.value.telefono)) {
+    errores.value.telefono = "El teléfono debe incluir lada de México y 10 dígitos"
+  }
+
+ 
   return Object.keys(errores.value).length === 0
 }
 
-// Guardar o actualizar alumno
-const guardarAlumno = async () => {
+// =====================
+// Formatear teléfono automático
+// =====================
+watch(() => nuevoAlumno.value.telefono, (val) => {
+  let soloNumeros = val.replace(/\D/g, '')
+  if (!soloNumeros.startsWith('52')) soloNumeros = '+52' + soloNumeros
+  nuevoAlumno.value.telefono = soloNumeros
+})
+
+// =====================
+// Agregar o actualizar
+// =====================
+const agregarAlumno = async () => {
   if (!validarFormulario()) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Formulario inválido',
-      text: 'Por favor corrige los errores'
-    })
+    Swal.fire({ icon: 'error', title: 'Formulario inválido', text: 'Por favor corrige los errores' })
     return
   }
 
   try {
-    const alumnosCollection = collection(db, 'alumnos')
-    
     if (editado.value) {
-      // Actualizar alumno existente
-      const docRef = doc(db, 'alumnos', nuevoAlumno.value.id)
-      await updateDoc(docRef, {
-        nombre: nuevoAlumno.value.nombre,
-        apellido: nuevoAlumno.value.apellido,
-        carrera: nuevoAlumno.value.carrera,
-        telefono: nuevoAlumno.value.telefono,
-        imagenURL: nuevoAlumno.value.imagenURL
-      })
-      Swal.fire('¡Actualizado!', 'Alumno actualizado correctamente', 'success')
+      await axios.put(`${API}/editar-alumnos/${nuevoAlumno.value.id}`, nuevoAlumno.value)
       editado.value = false
+      Swal.fire({ icon: 'success', title: 'Alumno actualizado correctamente', showConfirmButton: false, timer: 1500 })
     } else {
-      // Crear nuevo alumno
-      await addDoc(alumnosCollection, {
-        nombre: nuevoAlumno.value.nombre,
-        apellido: nuevoAlumno.value.apellido,
-        carrera: nuevoAlumno.value.carrera,
-        telefono: nuevoAlumno.value.telefono,
-        imagenURL: nuevoAlumno.value.imagenURL
-      })
-      Swal.fire('¡Guardado!', 'Alumno agregado correctamente', 'success')
+      await axios.post(`${API}/insertar-alumnos`, nuevoAlumno.value)
+      Swal.fire({ icon: 'success', title: 'Alumno agregado correctamente', showConfirmButton: false, timer: 1500 })
     }
 
-    // Limpiar formulario
-    nuevoAlumno.value = { id: null, nombre: '', apellido: '', carrera: '', telefono: '', imagenURL: '' }
+    await cargarAlumnos()
+    nuevoAlumno.value = { nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
+    errores.value = {}
 
   } catch (error) {
-    console.error('Error al guardar:', error)
-    Swal.fire('Error', 'Ocurrió un error al guardar: ' + error.message, 'error')
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un problema al guardar' })
   }
 }
 
+// =====================
 // Editar alumno
-const editarAlumno = (alumno) => {
-  nuevoAlumno.value = { ...alumno }
+// =====================
+const editarAlumnos = (alumno) => {
+  Object.assign(nuevoAlumno.value, alumno)
   editado.value = true
 }
 
+// =====================
 // Eliminar alumno
+// =====================
 const eliminarAlumno = async (id) => {
   Swal.fire({
     title: '¿Estás seguro?',
@@ -123,127 +215,33 @@ const eliminarAlumno = async (id) => {
     showCancelButton: true,
     confirmButtonText: 'Sí, eliminar'
   }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        const docRef = doc(db, 'alumnos', id)
-        await deleteDoc(docRef)
-        Swal.fire('¡Eliminado!', 'El alumno ha sido eliminado.', 'success')
-      } catch (error) {
-        console.error('Error al eliminar:', error)
-        Swal.fire('Error', 'No se pudo eliminar el alumno: ' + error.message, 'error')
-      }
-    }
+    if (result.isConfirmed) await eliminarAlumnoPorId(id)
   })
 }
 
+const eliminarAlumnoPorId = async (id) => {
+  try {
+    await axios.delete(`${API}/eliminar-alumnos/${id}`)
+    await cargarAlumnos()
+    Swal.fire('Eliminado!', 'El alumno ha sido eliminado.', 'success')
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el alumno.' })
+  }
+}
+
 // =====================
-// Ejecutar al iniciar y limpiar
+// Formatear teléfono para mostrar
 // =====================
+const formatTelefono = (num) => {
+  if (!num) return ''
+  let n = num.replace(/\D/g, '')
+  if (n.startsWith('52')) n = n.slice(2)
+  return '+52 ' + n.slice(0,3) + ' ' + n.slice(3,6) + ' ' + n.slice(6,10)
+}
+
 onMounted(cargarAlumnos)
-onUnmounted(() => {
-  if (unsubscribe) unsubscribe()
-})
 </script>
 
-<template>
-<div class="container mt-4">
-
-  <!-- FORMULARIO -->
-  <div class="card shadow p-4 mb-4">
-    <h2 class="text-center mb-4">Formulario de Alumnos</h2>
-    <form @submit.prevent="guardarAlumno">
-      <div class="row">
-
-        <!-- Nombre -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Nombre</label>
-          <input type="text" class="form-control" :class="{ 'is-invalid': errores.nombre }" v-model="nuevoAlumno.nombre" maxlength="50">
-          <small class="text-danger" v-if="errores.nombre">{{ errores.nombre }}</small>
-        </div>
-
-        <!-- Apellidos -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Apellidos (paterno y materno)</label>
-          <input type="text" class="form-control" :class="{ 'is-invalid': errores.apellido }" v-model="nuevoAlumno.apellido" maxlength="70">
-          <small class="text-danger" v-if="errores.apellido">{{ errores.apellido }}</small>
-        </div>
-
-        <!-- Carrera -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Carrera</label>
-          <select class="form-select" :class="{ 'is-invalid': errores.carrera }" v-model="nuevoAlumno.carrera">
-            <option value="" disabled>Seleccione una carrera</option>
-            <option>Ingeniería en Sistemas Computacionales</option>
-            <option>Ingeniería Industrial</option>
-            <option>Licenciatura en Contaduría</option>
-            <option>Licenciatura en Administración</option>
-            <option>Ingeniería en Mecatrónica</option>
-            <option>Ingeniería en Gestión Empresarial</option>
-          </select>
-          <small class="text-danger" v-if="errores.carrera">{{ errores.carrera }}</small>
-        </div>
-
-        <!-- Teléfono -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Teléfono</label>
-          <div class="input-group">
-            <span class="input-group-text">+52</span>
-            <input type="text" class="form-control" :class="{ 'is-invalid': errores.telefono }" v-model="nuevoAlumno.telefono" maxlength="10">
-          </div>
-          <small class="text-danger" v-if="errores.telefono">{{ errores.telefono }}</small>
-        </div>
-
-        <!-- Imagen URL -->
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Imagen URL</label>
-          <input type="text" class="form-control" v-model="nuevoAlumno.imagenURL">
-        </div>
-
-      </div>
-
-      <button type="submit" class="btn btn-primary">{{ editado ? 'Actualizar Alumno' : 'Agregar Alumno' }}</button>
-    </form>
-  </div>
-
-  <!-- TABLA DE ALUMNOS -->
-  <div class="card shadow">
-    <div class="card-body">
-      <h5 class="mb-3">Lista de Alumnos</h5>
-      <table class="table table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Apellidos</th>
-            <th>Carrera</th>
-            <th>Teléfono</th>
-            <th>Imagen</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="alumno in alumnos" :key="alumno.id">
-            <td>{{ alumno.id }}</td>
-            <td>{{ alumno.nombre }}</td>
-            <td>{{ alumno.apellido }}</td>
-            <td>{{ alumno.carrera }}</td>
-            <td>{{ alumno.telefono }}</td>
-            <td><img v-if="alumno.imagenURL" :src="alumno.imagenURL" width="50"></td>
-            <td>
-              <button class="btn btn-warning mx-2" @click="editarAlumno(alumno)">✏</button>
-              <button class="btn btn-danger" @click="eliminarAlumno(alumno.id)">🗑</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
-</template>
-
 <style scoped>
-img {
-  border-radius: 6px;
-}
+.card { border-radius: 10px; }
 </style>
