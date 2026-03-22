@@ -19,7 +19,6 @@ export default function AlumnoForm({ form, onChange, onSave, onCancel, saving, i
           <TextInput label="No. Control" mode="outlined" value={form.numeroControl} onChangeText={(v)=>onChange('numeroControl', v)} />
           <TextInput label="Teléfono" mode="outlined" keyboardType="phone-pad" value={form.telefono} onChangeText={(v)=>onChange('telefono', v)} />
           <TextInput label="Carrera" mode="outlined" value={form.carrera} onChangeText={(v)=>onChange('carrera', v)} />
-          <TextInput label="Imagen URL (opcional)" mode="outlined" value={form.imagenURL} onChangeText={(v)=>onChange('imagenURL', v)} />
         </Card.Content>
 
         <Card.Actions style={{ justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 12 }}>

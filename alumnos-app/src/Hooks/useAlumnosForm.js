@@ -7,7 +7,7 @@ const EMAIL_RX = /\S+@\S+\.\S+/;
 
 const EMPTY = {
   nombre: '', apellido: '', email: '',
-  numeroControl: '', telefono: '', carrera: '', imagenURL: ''
+  numeroControl: '', telefono: '', carrera: ''
 };
 
 export default function useAlumnoFormController() {
@@ -35,8 +35,7 @@ export default function useAlumnoFormController() {
           email: data?.email ?? '',
           numeroControl: data?.numeroControl ?? '',
           telefono: data?.telefono ?? '',
-          carrera: data?.carrera ?? '',
-          imagenURL: data?.imagenURL ?? ''
+          carrera: data?.carrera ?? ''
         });
       } catch {
         setMsg('No se pudo cargar el registro');

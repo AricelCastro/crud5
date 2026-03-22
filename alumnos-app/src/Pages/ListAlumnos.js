@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { View, FlatList, RefreshControl } from 'react-native';
-import { Appbar, Snackbar, ActivityIndicator, Card, Avatar, IconButton, Text, Chip, FAB } from 'react-native-paper';
+import { Appbar, Snackbar, ActivityIndicator, Card, IconButton, Text, Chip, FAB } from 'react-native-paper';
 import ConfirmDeleteDialog from '../Components/ConfirmDeleteModal';
 import useAlumnosListController from '../Hooks/useAlumnosList';
 
@@ -18,16 +18,12 @@ export default function ListaScreen({ navigation }) {
     const titulo = `${item?.nombre ?? ''} ${item?.apellido ?? ''}`.trim() || 'Sin nombre';
     const subtitulo = item?.email ? `${item.email}` : '';
     const carrera = item?.carrera || 'Sin carrera';
-    const avatar = item?.imagenURL
-      ? <Avatar.Image size={48} source={{ uri: item.imagenURL }} />
-      : <Avatar.Text size={48} label={(item?.nombre?.[0] || 'A') + (item?.apellido?.[0] || 'L')} />;
 
     return (
       <Card mode="elevated" style={{ marginHorizontal: 16, marginTop: 12, borderRadius: 16 }}>
         <Card.Title
           title={titulo}
           subtitle={subtitulo}
-          left={() => avatar}
           right={() => (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <IconButton icon="pencil" onPress={() => goToEdit(item.id)} />
@@ -36,6 +32,7 @@ export default function ListaScreen({ navigation }) {
           )}
         />
         <Card.Content style={{ gap: 8 }}>
+          <Text variant="bodySmall">ID: {item?.id ?? 'Sin ID'}</Text>
           <Chip icon="school" compact>{carrera}</Chip>
           {item?.telefono ? <Text variant="bodySmall">Tel: {item.telefono}</Text> : null}
           {item?.numeroControl ? <Text variant="bodySmall">No. Control: {item.numeroControl}</Text> : null}

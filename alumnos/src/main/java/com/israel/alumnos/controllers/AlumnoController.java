@@ -56,7 +56,6 @@ public class AlumnoController {
             alumnoExistente.setNumeroControl(alumno.getNumeroControl());
             alumnoExistente.setTelefono(alumno.getTelefono());
             alumnoExistente.setCarrera(alumno.getCarrera());
-            alumnoExistente.setImagenURL(alumno.getImagenURL());
             Alumno actualizado = alumnoRepository.save(alumnoExistente);
             return ResponseEntity.ok(actualizado);
         }).orElse(ResponseEntity.notFound().build());

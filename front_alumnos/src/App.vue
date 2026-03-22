@@ -70,6 +70,7 @@
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
+              <th>ID</th>
               <th>Nombre</th>
               <th>Apellidos</th>
               <th>Carrera</th>
@@ -79,12 +80,11 @@
           </thead>
           <tbody>
             <tr v-for="alumno in alumnos" :key="alumno.id">
-              
+              <td>{{ alumno.id }}</td>
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
               <td>{{ formatTelefono(alumno.telefono) }}</td>
-             
               <td>
                 <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
                 <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
@@ -99,31 +99,31 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
 import Swal from 'sweetalert2'
+import { db } from './firebase'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
 
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
+  id: null,
   nombre: '',
   apellido: '',
   carrera: '',
-  telefono: '',
-  imagenURL: ''
+  telefono: ''
 })
 
 const editado = ref(false)
 const errores = ref({})
-
-const API = 'http://localhost:8080/alumnos'
+const alumnosRef = collection(db, 'alumnos')
 
 // =====================
 // Cargar alumnos
 // =====================
 const cargarAlumnos = async () => {
   try {
-    const response = await axios.get(`${API}/traer-alumnos`)
-    alumnos.value = response.data
+    const snapshot = await getDocs(alumnosRef)
+    alumnos.value = snapshot.docs.map((registro) => ({ id: registro.id, ...registro.data() }))
   } catch (error) {
     console.error(error)
   }
@@ -178,17 +178,29 @@ const agregarAlumno = async () => {
   }
 
   try {
+    const payload = {
+      nombre: nuevoAlumno.value.nombre,
+      apellido: nuevoAlumno.value.apellido,
+      carrera: nuevoAlumno.value.carrera,
+      telefono: nuevoAlumno.value.telefono
+    }
+
     if (editado.value) {
-      await axios.put(`${API}/editar-alumnos/${nuevoAlumno.value.id}`, nuevoAlumno.value)
+      if (!nuevoAlumno.value.id) {
+        Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a actualizar' })
+        return
+      }
+      const refDoc = doc(db, 'alumnos', String(nuevoAlumno.value.id))
+      await updateDoc(refDoc, payload)
       editado.value = false
       Swal.fire({ icon: 'success', title: 'Alumno actualizado correctamente', showConfirmButton: false, timer: 1500 })
     } else {
-      await axios.post(`${API}/insertar-alumnos`, nuevoAlumno.value)
+      await addDoc(alumnosRef, payload)
       Swal.fire({ icon: 'success', title: 'Alumno agregado correctamente', showConfirmButton: false, timer: 1500 })
     }
 
     await cargarAlumnos()
-    nuevoAlumno.value = { nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
+    nuevoAlumno.value = { id: null, nombre:'', apellido:'', carrera:'', telefono:'' }
     errores.value = {}
 
   } catch (error) {
@@ -221,7 +233,11 @@ const eliminarAlumno = async (id) => {
 
 const eliminarAlumnoPorId = async (id) => {
   try {
-    await axios.delete(`${API}/eliminar-alumnos/${id}`)
+    if (!id) {
+      Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a eliminar' })
+      return
+    }
+    await deleteDoc(doc(db, 'alumnos', String(id)))
     await cargarAlumnos()
     Swal.fire('Eliminado!', 'El alumno ha sido eliminado.', 'success')
   } catch (error) {
