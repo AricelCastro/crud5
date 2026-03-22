@@ -78,14 +78,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="alumno in alumnos" :key="alumno.id">
+            <tr v-for="alumno in alumnos" :key="alumno._docId || alumno.id">
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
               <td>{{ formatTelefono(alumno.telefono) }}</td>
               <td>
                 <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
-                <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
+                <button @click="eliminarAlumno(alumno)" class="btn btn-danger mx-1">🗑</button>
               </td>
             </tr>
           </tbody>
@@ -105,6 +105,7 @@ const alumnos = ref([])
 
 const nuevoAlumno = ref({
   id: null,
+  _docId: null,
   nombre: '',
   apellido: '',
   carrera: '',
@@ -121,7 +122,14 @@ const alumnosRef = collection(db, 'alumnos')
 const cargarAlumnos = async () => {
   try {
     const snapshot = await getDocs(alumnosRef)
-    alumnos.value = snapshot.docs.map((registro) => ({ id: registro.id, ...registro.data() }))
+    alumnos.value = snapshot.docs.map((registro) => {
+      const data = registro.data() || {}
+      return {
+        ...data,
+        id: data.id ?? null,
+        _docId: registro.id
+      }
+    })
   } catch (error) {
     console.error(error)
   }
@@ -184,11 +192,12 @@ const agregarAlumno = async () => {
     }
 
     if (editado.value) {
-      if (!nuevoAlumno.value.id) {
+      const targetId = nuevoAlumno.value._docId || nuevoAlumno.value.id
+      if (!targetId) {
         Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a actualizar' })
         return
       }
-      const refDoc = doc(db, 'alumnos', String(nuevoAlumno.value.id))
+      const refDoc = doc(db, 'alumnos', String(targetId))
       await updateDoc(refDoc, payload)
       editado.value = false
       Swal.fire({ icon: 'success', title: 'Alumno actualizado correctamente', showConfirmButton: false, timer: 1500 })
@@ -198,7 +207,7 @@ const agregarAlumno = async () => {
     }
 
     await cargarAlumnos()
-    nuevoAlumno.value = { id: null, nombre:'', apellido:'', carrera:'', telefono:'' }
+    nuevoAlumno.value = { id: null, _docId: null, nombre:'', apellido:'', carrera:'', telefono:'' }
     errores.value = {}
 
   } catch (error) {
@@ -217,7 +226,8 @@ const editarAlumnos = (alumno) => {
 // =====================
 // Eliminar alumno
 // =====================
-const eliminarAlumno = async (id) => {
+const eliminarAlumno = async (alumno) => {
+  const targetId = alumno?._docId || alumno?.id
   Swal.fire({
     title: '¿Estás seguro?',
     text: "No podrás revertir esto",
@@ -225,7 +235,7 @@ const eliminarAlumno = async (id) => {
     showCancelButton: true,
     confirmButtonText: 'Sí, eliminar'
   }).then(async (result) => {
-    if (result.isConfirmed) await eliminarAlumnoPorId(id)
+    if (result.isConfirmed) await eliminarAlumnoPorId(targetId)
   })
 }
 
