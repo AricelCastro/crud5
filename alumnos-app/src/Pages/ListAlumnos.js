@@ -32,7 +32,6 @@ export default function ListaScreen({ navigation }) {
           )}
         />
         <Card.Content style={{ gap: 8 }}>
-          <Text variant="bodySmall">ID: {item?.id ?? 'Sin ID'}</Text>
           <Chip icon="school" compact>{carrera}</Chip>
           {item?.telefono ? <Text variant="bodySmall">Tel: {item.telefono}</Text> : null}
           {item?.numeroControl ? <Text variant="bodySmall">No. Control: {item.numeroControl}</Text> : null}

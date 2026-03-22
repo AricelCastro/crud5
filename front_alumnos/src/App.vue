@@ -70,7 +70,6 @@
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
-              <th>ID</th>
               <th>Nombre</th>
               <th>Apellidos</th>
               <th>Carrera</th>
@@ -80,7 +79,6 @@
           </thead>
           <tbody>
             <tr v-for="alumno in alumnos" :key="alumno.id">
-              <td>{{ alumno.id }}</td>
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
