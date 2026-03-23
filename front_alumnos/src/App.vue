@@ -1,5 +1,5 @@
 <template>
-  <div class="container py-2" style="max-width:1200px">
+  <div class="container" style="max-width:700px">
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
       <h2 class="text-center mb-3">Formulario de Alumnos</h2>
@@ -67,35 +67,29 @@
     <div class="card shadow mt-4">
       <div class="card-body">
         <h5 class="card-title mb-3">Lista de Alumnos</h5>
-        <div class="table-responsive">
-        <table class="table table-hover align-middle tabla-alumnos">
+        <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
               <th>Nombre</th>
               <th>Apellidos</th>
               <th>Carrera</th>
               <th>Teléfono</th>
-              <th class="acciones-columna">Acciones</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="alumno in alumnos" :key="alumno.id">
-              
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
-              <td class="telefono-columna">{{ formatTelefono(alumno.telefono) }}</td>
-             
-              <td class="acciones-columna">
-                <div class="acciones-botones">
-                  <button @click="editarAlumnos(alumno)" class="btn btn-warning btn-sm">✏</button>
-                  <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger btn-sm">🗑</button>
-                </div>
+              <td>{{ formatTelefono(alumno.telefono) }}</td>
+              <td>
+                <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
+                <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
               </td>
             </tr>
           </tbody>
         </table>
-        </div>
       </div>
     </div>
   </div>
@@ -103,40 +97,32 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
 import Swal from 'sweetalert2'
+import { db } from './firebase'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
 
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
+  id: null,
+  _docId: null,
   nombre: '',
   apellido: '',
   carrera: '',
-  telefono: '',
-  imagenURL: ''
+  telefono: ''
 })
 
 const editado = ref(false)
 const errores = ref({})
-  
-const envApiUrl = (import.meta.env.VITE_API_URL || '').trim()
-const defaultApiBase = import.meta.env.DEV
-  ? 'http://localhost:8081'
-  : 'https://crud-alumnos-api.onrender.com'
-const frontendHostHint = 'crud-alumnos-frontend.onrender.com'
-const selectedApiBase = envApiUrl && !envApiUrl.includes(frontendHostHint)
-  ? envApiUrl
-  : defaultApiBase
-const rawApiBase = selectedApiBase.replace(/\/$/, '')
-const API = rawApiBase.endsWith('/alumnos') ? rawApiBase : `${rawApiBase}/alumnos`
+const alumnosRef = collection(db, 'alumnos')
 
 // =====================
 // Cargar alumnos
 // =====================
 const cargarAlumnos = async () => {
   try {
-    const response = await axios.get(`${API}/traer-alumnos`)
-    alumnos.value = response.data
+    const snapshot = await getDocs(alumnosRef)
+    alumnos.value = snapshot.docs.map((registro) => ({ id: registro.id, ...registro.data() }))
   } catch (error) {
     console.error(error)
   }
@@ -150,14 +136,15 @@ const validarFormulario = () => {
 
   if (!nuevoAlumno.value.nombre.trim()) {
     errores.value.nombre = "El campo es obligatorio"
-  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/.test(nuevoAlumno.value.nombre)) {
-  errores.value.nombre = "Debe iniciar con mayúscula y solo contener letras"
-}
+  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(nuevoAlumno.value.nombre)) {
+    errores.value.nombre = "Solo se permiten letras"
+  }
+
   if (!nuevoAlumno.value.apellido.trim()) {
     errores.value.apellido = "El campo es obligatorio"
-  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)+$/.test(nuevoAlumno.value.apellido)) {
-  errores.value.apellido = "Cada apellido debe iniciar con mayúscula y solo contener letras"
-}
+  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ]+\s[a-zA-ZÁÉÍÓÚáéíóúÑñ]+$/.test(nuevoAlumno.value.apellido)) {
+    errores.value.apellido = "Debe ser solo dos palabras, solo letras"
+  }
 
   if (!nuevoAlumno.value.carrera.trim()) {
     errores.value.carrera = "El campo es obligatorio"
@@ -190,17 +177,29 @@ const agregarAlumno = async () => {
   }
 
   try {
+    const payload = {
+      nombre: nuevoAlumno.value.nombre,
+      apellido: nuevoAlumno.value.apellido,
+      carrera: nuevoAlumno.value.carrera,
+      telefono: nuevoAlumno.value.telefono
+    }
+
     if (editado.value) {
-      await axios.put(`${API}/editar-alumnos/${nuevoAlumno.value.id}`, nuevoAlumno.value)
+      if (!nuevoAlumno.value.id) {
+        Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a actualizar' })
+        return
+      }
+      const refDoc = doc(db, 'alumnos', String(nuevoAlumno.value.id))
+      await updateDoc(refDoc, payload)
       editado.value = false
       Swal.fire({ icon: 'success', title: 'Alumno actualizado correctamente', showConfirmButton: false, timer: 1500 })
     } else {
-      await axios.post(`${API}/insertar-alumnos`, nuevoAlumno.value)
+      await addDoc(alumnosRef, payload)
       Swal.fire({ icon: 'success', title: 'Alumno agregado correctamente', showConfirmButton: false, timer: 1500 })
     }
 
     await cargarAlumnos()
-    nuevoAlumno.value = { nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
+    nuevoAlumno.value = { id: null, nombre:'', apellido:'', carrera:'', telefono:'' }
     errores.value = {}
 
   } catch (error) {
@@ -233,7 +232,11 @@ const eliminarAlumno = async (id) => {
 
 const eliminarAlumnoPorId = async (id) => {
   try {
-    await axios.delete(`${API}/eliminar-alumnos/${id}`)
+    if (!id) {
+      Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a eliminar' })
+      return
+    }
+    await deleteDoc(doc(db, 'alumnos', String(id)))
     await cargarAlumnos()
     Swal.fire('Eliminado!', 'El alumno ha sido eliminado.', 'success')
   } catch (error) {
@@ -254,34 +257,6 @@ const formatTelefono = (num) => {
 onMounted(cargarAlumnos)
 </script>
 
-
 <style scoped>
 .card { border-radius: 10px; }
-
-.tabla-alumnos {
-  min-width: 860px;
-}
-
-.acciones-columna {
-  width: 140px;
-  min-width: 140px;
-  white-space: nowrap;
-}
-
-.telefono-columna {
-  white-space: nowrap;
-}
-
-.acciones-botones {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-@media (max-width: 768px) {
-  .tabla-alumnos {
-    min-width: 760px;
-  }
-}
 </style>
