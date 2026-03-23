@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const http = axios.create({
   
-  baseURL: 'https://tu-backend.onrender.com/alumnos',
+  baseURL: 'https://crud-alumnos-api.onrender.com',
 
   timeout: 10000,
 });

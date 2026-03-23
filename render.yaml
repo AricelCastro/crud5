@@ -1,9 +1,19 @@
 services:
   - type: web
+    name: crud-alumnos-api
+    env: java
+    rootDir: alumnos
+    buildCommand: chmod +x mvnw && ./mvnw clean package -DskipTests
+    startCommand: java -Dserver.port=$PORT -jar target/alumnos-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: local
+
+  - type: web
     name: crud-alumnos-frontend
     env: static
     buildCommand: cd front_alumnos && npm install && npm run build
     staticPublishPath: front_alumnos/dist
     envVars:
       - key: VITE_API_URL
-        value: https://crud-alumnos-frontend.onrender.com
+        value: https://crud-alumnos-api.onrender.com
