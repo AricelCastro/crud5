@@ -4,3 +4,6 @@ services:
     env: static
     buildCommand: cd front_alumnos && npm install && npm run build
     staticPublishPath: front_alumnos/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://alumnos-crud-api.azurewebsites.net
