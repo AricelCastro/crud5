@@ -70,7 +70,6 @@
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
-              <th>ID</th>
               <th>Nombre</th>
               <th>Apellidos</th>
               <th>Carrera</th>
@@ -80,7 +79,6 @@
           </thead>
           <tbody>
             <tr v-for="alumno in alumnos" :key="alumno.id">
-              <td>{{ alumno.id }}</td>
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
@@ -116,6 +114,9 @@ const nuevoAlumno = ref({
 const editado = ref(false)
 const errores = ref({})
 const alumnosRef = collection(db, 'alumnos')
+const PROPER_CASE_WORDS_RX = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/
+
+const normalizeWords = (text) => (text || '').trim().replace(/\s+/g, ' ')
 
 // =====================
 // Cargar alumnos
@@ -134,16 +135,18 @@ const cargarAlumnos = async () => {
 // =====================
 const validarFormulario = () => {
   errores.value = {}
+  const nombre = normalizeWords(nuevoAlumno.value.nombre)
+  const apellido = normalizeWords(nuevoAlumno.value.apellido)
 
-  if (!nuevoAlumno.value.nombre.trim()) {
+  if (!nombre) {
     errores.value.nombre = "El campo es obligatorio"
-  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/.test(nuevoAlumno.value.nombre)) {
+  } else if (!PROPER_CASE_WORDS_RX.test(nombre)) {
     errores.value.nombre = "Cada palabra debe iniciar con mayúscula y continuar con minúsculas"
   }
 
-  if (!nuevoAlumno.value.apellido.trim()) {
+  if (!apellido) {
     errores.value.apellido = "El campo es obligatorio"
-  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/.test(nuevoAlumno.value.apellido)) {
+  } else if (!PROPER_CASE_WORDS_RX.test(apellido)) {
     errores.value.apellido = "Cada apellido debe iniciar con mayúscula y continuar con minúsculas"
   }
 
@@ -179,8 +182,8 @@ const agregarAlumno = async () => {
 
   try {
     const payload = {
-      nombre: nuevoAlumno.value.nombre,
-      apellido: nuevoAlumno.value.apellido,
+      nombre: normalizeWords(nuevoAlumno.value.nombre),
+      apellido: normalizeWords(nuevoAlumno.value.apellido),
       carrera: nuevoAlumno.value.carrera,
       telefono: nuevoAlumno.value.telefono
     }
