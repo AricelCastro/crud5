@@ -137,14 +137,14 @@ const validarFormulario = () => {
 
   if (!nuevoAlumno.value.nombre.trim()) {
     errores.value.nombre = "El campo es obligatorio"
-  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(nuevoAlumno.value.nombre)) {
-    errores.value.nombre = "Solo se permiten letras"
+  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/.test(nuevoAlumno.value.nombre)) {
+    errores.value.nombre = "Cada palabra debe iniciar con mayúscula y continuar con minúsculas"
   }
 
   if (!nuevoAlumno.value.apellido.trim()) {
     errores.value.apellido = "El campo es obligatorio"
-  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ]+\s[a-zA-ZÁÉÍÓÚáéíóúÑñ]+$/.test(nuevoAlumno.value.apellido)) {
-    errores.value.apellido = "Debe ser solo dos palabras, solo letras"
+  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/.test(nuevoAlumno.value.apellido)) {
+    errores.value.apellido = "Cada apellido debe iniciar con mayúscula y continuar con minúsculas"
   }
 
   if (!nuevoAlumno.value.carrera.trim()) {
