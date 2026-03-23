@@ -123,7 +123,9 @@ const envApiUrl = (import.meta.env.VITE_API_URL || '').trim()
 const defaultApiBase = import.meta.env.DEV
   ? 'http://localhost:8081'
   : 'https://alumnos-crud-api.azurewebsites.net'
-const rawApiBase = (envApiUrl || defaultApiBase).replace(/\/$/, '')
+const frontendHostHint = 'crud-alumnos-frontend.onrender.com'
+const selectedApiBase = envApiUrl.includes(frontendHostHint) ? defaultApiBase : (envApiUrl || defaultApiBase)
+const rawApiBase = selectedApiBase.replace(/\/$/, '')
 const API = rawApiBase.endsWith('/alumnos') ? rawApiBase : `${rawApiBase}/alumnos`
 
 // =====================
