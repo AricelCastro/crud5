@@ -124,7 +124,9 @@ const defaultApiBase = import.meta.env.DEV
   ? 'http://localhost:8081'
   : 'https://crud-alumnos-frontend.onrender.com'
 const frontendHostHint = 'crud-alumnos-frontend.onrender.com'
-const selectedApiBase = envApiUrl.includes(frontendHostHint) ? defaultApiBase : (envApiUrl || defaultApiBase)
+const selectedApiBase = envApiUrl && !envApiUrl.includes(frontendHostHint)
+  ? envApiUrl
+  : defaultApiBase
 const rawApiBase = selectedApiBase.replace(/\/$/, '')
 const API = rawApiBase.endsWith('/alumnos') ? rawApiBase : `${rawApiBase}/alumnos`
 
