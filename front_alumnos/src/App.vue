@@ -119,7 +119,7 @@ const nuevoAlumno = ref({
 const editado = ref(false)
 const errores = ref({})
 
-const rawApiBase = (import.meta.env.VITE_API_URL || 'https://crud-alumnos-frontend.onrender.com').replace(/\/$/, '')
+const rawApiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8081').replace(/\/$/, '')
 const API = rawApiBase.endsWith('/alumnos') ? rawApiBase : `${rawApiBase}/alumnos`
 
 // =====================
