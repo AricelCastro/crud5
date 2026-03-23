@@ -119,7 +119,8 @@ const nuevoAlumno = ref({
 const editado = ref(false)
 const errores = ref({})
 
-const API = 'http://localhost:8080/alumnos'
+const rawApiBase = (import.meta.env.VITE_API_URL || 'https://crud-alumnos-frontend.onrender.com').replace(/\/$/, '')
+const API = rawApiBase.endsWith('/alumnos') ? rawApiBase : `${rawApiBase}/alumnos`
 
 // =====================
 // Cargar alumnos
