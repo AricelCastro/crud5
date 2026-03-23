@@ -122,7 +122,7 @@ const errores = ref({})
 const envApiUrl = (import.meta.env.VITE_API_URL || '').trim()
 const defaultApiBase = import.meta.env.DEV
   ? 'http://localhost:8081'
-  : 'https://crud-alumnos-frontend.onrender.com'  ¿
+  : 'https://crud-alumnos-frontend.onrender.com'
 const frontendHostHint = 'crud-alumnos-frontend.onrender.com'
 const selectedApiBase = envApiUrl.includes(frontendHostHint) ? defaultApiBase : (envApiUrl || defaultApiBase)
 const rawApiBase = selectedApiBase.replace(/\/$/, '')
