@@ -118,7 +118,7 @@ const nuevoAlumno = ref({
 
 const editado = ref(false)
 const errores = ref({})
-
+  
 const envApiUrl = (import.meta.env.VITE_API_URL || '').trim()
 const defaultApiBase = import.meta.env.DEV
   ? 'http://localhost:8081'

@@ -6,4 +6,4 @@ services:
     staticPublishPath: front_alumnos/dist
     envVars:
       - key: VITE_API_URL
-        value: https://alumnos-crud-api.azurewebsites.net
+        value: https://crud-alumnos-frontend.onrender.com
