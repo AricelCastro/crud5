@@ -1,5 +1,5 @@
-mira apenas edite el codigo <template>
-  <div class="container" style="max-width:900px">
+<template>
+  <div class="container py-2" style="max-width:1200px">
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
       <h2 class="text-center mb-3">Formulario de Alumnos</h2>
@@ -67,14 +67,15 @@ mira apenas edite el codigo <template>
     <div class="card shadow mt-4">
       <div class="card-body">
         <h5 class="card-title mb-3">Lista de Alumnos</h5>
-        <table class="table table-hover align-middle">
+        <div class="table-responsive">
+        <table class="table table-hover align-middle tabla-alumnos">
           <thead class="table-light">
             <tr>
               <th>Nombre</th>
               <th>Apellidos</th>
               <th>Carrera</th>
               <th>Teléfono</th>
-              <th>Acciones</th>
+              <th class="acciones-columna">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -83,15 +84,18 @@ mira apenas edite el codigo <template>
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
-              <td>{{ formatTelefono(alumno.telefono) }}</td>
+              <td class="telefono-columna">{{ formatTelefono(alumno.telefono) }}</td>
              
-              <td>
-                <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
-                <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
+              <td class="acciones-columna">
+                <div class="acciones-botones">
+                  <button @click="editarAlumnos(alumno)" class="btn btn-warning btn-sm">✏</button>
+                  <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger btn-sm">🗑</button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   </div>
@@ -244,4 +248,31 @@ onMounted(cargarAlumnos)
 
 <style scoped>
 .card { border-radius: 10px; }
+
+.tabla-alumnos {
+  min-width: 860px;
+}
+
+.acciones-columna {
+  width: 140px;
+  min-width: 140px;
+  white-space: nowrap;
+}
+
+.telefono-columna {
+  white-space: nowrap;
+}
+
+.acciones-botones {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .tabla-alumnos {
+    min-width: 760px;
+  }
+}
 </style>
