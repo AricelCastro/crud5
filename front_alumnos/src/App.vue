@@ -1,5 +1,6 @@
 <template>
-  <div class="container" style="max-width:700px">
+  <div class="container" style="max-width:1000px"> <!-- MÁS ANCHO -->
+    
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
       <h2 class="text-center mb-3">Formulario de Alumnos</h2>
@@ -40,22 +41,20 @@
               <option value="Ingeniería en Mecatrónica">Ingeniería en Mecatrónica</option>
               <option value="Ingeniería en Gestión Empresarial">Ingeniería en Gestión</option>
             </select>
-            <small class="text-danger" v-if="errores.carrera">{{ errores.carrera }}</small>
           </div>
 
-         <!-- Teléfono -->
-<div class="col-md-6">
-  <label class="form-label">Teléfono</label>
-  <input type="text"
-         class="form-control"
-         :class="{ 'is-invalid': errores.telefono }"
-         v-model="nuevoAlumno.telefono"
-         maxlength="12"          
-         @input="nuevoAlumno.telefono = nuevoAlumno.telefono.replace(/\D/g,'').slice(0,12)">
-  <small class="text-danger" v-if="errores.telefono">{{ errores.telefono }}</small>
-</div>
+          <!-- Teléfono -->
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="text"
+                   class="form-control"
+                   :class="{ 'is-invalid': errores.telefono }"
+                   v-model="nuevoAlumno.telefono"
+                   maxlength="12"
+                   @input="nuevoAlumno.telefono = nuevoAlumno.telefono.replace(/\D/g,'').slice(0,12)">
+          </div>
 
-                </div>
+        </div>
 
         <button type="submit" class="btn btn-primary mt-3 w-100">
           {{ editado ? 'Actualizar Alumno' : 'Agregar Alumno' }}
@@ -63,33 +62,41 @@
       </form>
     </div>
 
-    <!-- Tabla de Alumnos -->
+    <!-- Tabla -->
     <div class="card shadow mt-4">
       <div class="card-body">
         <h5 class="card-title mb-3">Lista de Alumnos</h5>
-        <table class="table table-hover align-middle">
-          <thead class="table-light">
+
+        <div class="table-responsive">
+        <table class="table table-hover align-middle table-bordered text-center tabla-alumnos">
+          <thead class="table-dark">
             <tr>
-              <th>Nombre</th>
-              <th>Apellidos</th>
-              <th>Carrera</th>
-              <th>Teléfono</th>
-              <th>Acciones</th>
+              <!-- ❌ ID eliminado -->
+              <th style="width:20%">Nombre</th>
+              <th style="width:20%">Apellidos</th>
+              <th style="width:30%">Carrera</th>
+              <th style="width:20%">Teléfono</th>
+              <th class="acciones-columna">Acciones</th>
             </tr>
           </thead>
+
           <tbody>
             <tr v-for="alumno in alumnos" :key="alumno.id">
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
-              <td>{{ formatTelefono(alumno.telefono) }}</td>
-              <td>
-                <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
-                <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
+              <td class="telefono-columna">{{ formatTelefono(alumno.telefono) }}</td>
+              <td class="acciones-columna">
+                <div class="acciones-botones">
+                  <button @click="editarAlumnos(alumno)" class="btn btn-warning btn-sm">✏</button>
+                  <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger btn-sm">🗑</button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+        </div>
+
       </div>
     </div>
   </div>
@@ -147,7 +154,7 @@ const validarFormulario = () => {
   if (!apellido) {
     errores.value.apellido = "El campo es obligatorio"
   } else if (!PROPER_CASE_WORDS_RX.test(apellido)) {
-    errores.value.apellido = "Cada apellido debe iniciar con mayúscula y continuar con minúsculas"
+    errores.value.apellido = "Cada palabra debe iniciar con mayúscula y continuar con minúsculas"
   }
 
   if (!nuevoAlumno.value.carrera.trim()) {
@@ -263,4 +270,25 @@ onMounted(cargarAlumnos)
 
 <style scoped>
 .card { border-radius: 10px; }
+
+.tabla-alumnos {
+  min-width: 860px;
+}
+
+.acciones-columna {
+  width: 140px;
+  min-width: 140px;
+  white-space: nowrap;
+}
+
+.telefono-columna {
+  white-space: nowrap;
+}
+
+.acciones-botones {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 </style>
