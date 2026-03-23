@@ -1,5 +1,5 @@
 <template>
-  <div class="container" style="max-width:700px">
+  <div class="container" style="max-width:900px">
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
       <h2 class="text-center mb-3">Formulario de Alumnos</h2>
@@ -78,14 +78,16 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="alumno in alumnos" :key="alumno._docId || alumno.id">
+            <tr v-for="alumno in alumnos" :key="alumno.id">
+              
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
               <td>{{ formatTelefono(alumno.telefono) }}</td>
+             
               <td>
                 <button @click="editarAlumnos(alumno)" class="btn btn-warning mx-1">✏</button>
-                <button @click="eliminarAlumno(alumno)" class="btn btn-danger mx-1">🗑</button>
+                <button @click="eliminarAlumno(alumno.id)" class="btn btn-danger mx-1">🗑</button>
               </td>
             </tr>
           </tbody>
@@ -97,39 +99,31 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import axios from 'axios'
 import Swal from 'sweetalert2'
-import { db } from './firebase'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
 
 const alumnos = ref([])
 
 const nuevoAlumno = ref({
-  id: null,
-  _docId: null,
   nombre: '',
   apellido: '',
   carrera: '',
-  telefono: ''
+  telefono: '',
+  imagenURL: ''
 })
 
 const editado = ref(false)
 const errores = ref({})
-const alumnosRef = collection(db, 'alumnos')
+
+const API = 'http://localhost:8080/alumnos'
 
 // =====================
 // Cargar alumnos
 // =====================
 const cargarAlumnos = async () => {
   try {
-    const snapshot = await getDocs(alumnosRef)
-    alumnos.value = snapshot.docs.map((registro) => {
-      const data = registro.data() || {}
-      return {
-        ...data,
-        id: data.id ?? null,
-        _docId: registro.id
-      }
-    })
+    const response = await axios.get(`${API}/traer-alumnos`)
+    alumnos.value = response.data
   } catch (error) {
     console.error(error)
   }
@@ -143,15 +137,14 @@ const validarFormulario = () => {
 
   if (!nuevoAlumno.value.nombre.trim()) {
     errores.value.nombre = "El campo es obligatorio"
-  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(nuevoAlumno.value.nombre)) {
-    errores.value.nombre = "Solo se permiten letras"
-  }
-
+  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/.test(nuevoAlumno.value.nombre)) {
+  errores.value.nombre = "Debe iniciar con mayúscula y solo contener letras"
+}
   if (!nuevoAlumno.value.apellido.trim()) {
     errores.value.apellido = "El campo es obligatorio"
-  } else if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ]+\s[a-zA-ZÁÉÍÓÚáéíóúÑñ]+$/.test(nuevoAlumno.value.apellido)) {
-    errores.value.apellido = "Debe ser solo dos palabras, solo letras"
-  }
+  } else if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)+$/.test(nuevoAlumno.value.apellido)) {
+  errores.value.apellido = "Cada apellido debe iniciar con mayúscula y solo contener letras"
+}
 
   if (!nuevoAlumno.value.carrera.trim()) {
     errores.value.carrera = "El campo es obligatorio"
@@ -184,30 +177,17 @@ const agregarAlumno = async () => {
   }
 
   try {
-    const payload = {
-      nombre: nuevoAlumno.value.nombre,
-      apellido: nuevoAlumno.value.apellido,
-      carrera: nuevoAlumno.value.carrera,
-      telefono: nuevoAlumno.value.telefono
-    }
-
     if (editado.value) {
-      const targetId = nuevoAlumno.value._docId || nuevoAlumno.value.id
-      if (!targetId) {
-        Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a actualizar' })
-        return
-      }
-      const refDoc = doc(db, 'alumnos', String(targetId))
-      await updateDoc(refDoc, payload)
+      await axios.put(`${API}/editar-alumnos/${nuevoAlumno.value.id}`, nuevoAlumno.value)
       editado.value = false
       Swal.fire({ icon: 'success', title: 'Alumno actualizado correctamente', showConfirmButton: false, timer: 1500 })
     } else {
-      await addDoc(alumnosRef, payload)
+      await axios.post(`${API}/insertar-alumnos`, nuevoAlumno.value)
       Swal.fire({ icon: 'success', title: 'Alumno agregado correctamente', showConfirmButton: false, timer: 1500 })
     }
 
     await cargarAlumnos()
-    nuevoAlumno.value = { id: null, _docId: null, nombre:'', apellido:'', carrera:'', telefono:'' }
+    nuevoAlumno.value = { nombre:'', apellido:'', carrera:'', telefono:'', imagenURL:'' }
     errores.value = {}
 
   } catch (error) {
@@ -226,8 +206,7 @@ const editarAlumnos = (alumno) => {
 // =====================
 // Eliminar alumno
 // =====================
-const eliminarAlumno = async (alumno) => {
-  const targetId = alumno?._docId || alumno?.id
+const eliminarAlumno = async (id) => {
   Swal.fire({
     title: '¿Estás seguro?',
     text: "No podrás revertir esto",
@@ -235,17 +214,13 @@ const eliminarAlumno = async (alumno) => {
     showCancelButton: true,
     confirmButtonText: 'Sí, eliminar'
   }).then(async (result) => {
-    if (result.isConfirmed) await eliminarAlumnoPorId(targetId)
+    if (result.isConfirmed) await eliminarAlumnoPorId(id)
   })
 }
 
 const eliminarAlumnoPorId = async (id) => {
   try {
-    if (!id) {
-      Swal.fire({ icon: 'error', title: 'ID inválido', text: 'No se pudo identificar el alumno a eliminar' })
-      return
-    }
-    await deleteDoc(doc(db, 'alumnos', String(id)))
+    await axios.delete(`${API}/eliminar-alumnos/${id}`)
     await cargarAlumnos()
     Swal.fire('Eliminado!', 'El alumno ha sido eliminado.', 'success')
   } catch (error) {
