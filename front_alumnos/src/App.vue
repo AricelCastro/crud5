@@ -1,4 +1,4 @@
-<template>
+mira apenas edite el codigo <template>
   <div class="container" style="max-width:900px">
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
@@ -240,6 +240,7 @@ const formatTelefono = (num) => {
 
 onMounted(cargarAlumnos)
 </script>
+
 
 <style scoped>
 .card { border-radius: 10px; }
