@@ -63,22 +63,30 @@
         <h5 class="card-title mb-3">Lista de Alumnos</h5>
 
         <div class="table-responsive">
-        <table class="table table-hover align-middle table-bordered text-center tabla-alumnos">
+        <table class="table table-hover align-middle table-bordered tabla-alumnos">
           <thead class="table-dark">
             <tr>
               <!-- ❌ ID eliminado -->
-              <th style="width:20%">Nombre</th>
-              <th style="width:20%">Apellidos</th>
-              <th style="width:30%" class="carrera-columna">
+              <th style="width:28%" class="nombre-columna">
+                <div class="nombre-header-control">
+                  <span>Nombre</span>
+                  <select class="form-select" v-model="alumnoSeleccionado" aria-label="Filtrar por alumno">
+                    <option value="">Todos</option>
+                    <option v-for="alumno in nombresDisponibles" :key="`filtro-${alumno.id}`" :value="alumno.id">{{ alumno.nombre }} {{ alumno.apellido }}</option>
+                  </select>
+                </div>
+              </th>
+              <th style="width:12%">Apellidos</th>
+              <th style="width:25%" class="carrera-columna">
                 <div class="carrera-header-control">
                   <span>Carrera</span>
                   <select class="form-select" v-model="carreraSeleccionada" aria-label="Filtrar por carrera">
-                    <option value="">Todas las carreras</option>
+                    <option value="">carreras</option>
                     <option v-for="carrera in carrerasDisponibles" :key="`filtro-${carrera}`" :value="carrera">{{ carrera }}</option>
                   </select>
                 </div>
               </th>
-              <th style="width:20%">Teléfono</th>
+              <th style="width:10%">Teléfono</th>
               <th class="acciones-columna">Acciones</th>
             </tr>
           </thead>
@@ -137,6 +145,7 @@ const carreras = [
   'Ingeniería en Gestión Empresarial'
 ]
 const carreraSeleccionada = ref('')
+const alumnoSeleccionado = ref('')
 
 const normalizeWords = (text) => (text || '').trim().replace(/\s+/g, ' ')
 const carrerasDisponibles = computed(() => {
@@ -148,9 +157,24 @@ const carrerasDisponibles = computed(() => {
   return [...carrerasUnicas].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
 })
 
+const nombresDisponibles = computed(() => {
+  return alumnos.value
+    .map((alumno) => ({ id: alumno.id, nombre: alumno.nombre, apellido: alumno.apellido }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+})
+
 const alumnosFiltrados = computed(() => {
-  if (!carreraSeleccionada.value) return alumnos.value
-  return alumnos.value.filter((alumno) => alumno.carrera === carreraSeleccionada.value)
+  let resultado = alumnos.value
+
+  if (carreraSeleccionada.value) {
+    resultado = resultado.filter((alumno) => alumno.carrera === carreraSeleccionada.value)
+  }
+
+  if (alumnoSeleccionado.value) {
+    resultado = resultado.filter((alumno) => alumno.id === alumnoSeleccionado.value)
+  }
+
+  return resultado
 })
 
 // =====================
@@ -303,6 +327,14 @@ onMounted(cargarAlumnos)
   min-width: 860px;
 }
 
+.tabla-alumnos tbody {
+  text-align: center;
+}
+
+.tabla-alumnos tbody td {
+  text-align: center;
+}
+
 .acciones-columna {
   width: 140px;
   min-width: 140px;
@@ -320,33 +352,75 @@ onMounted(cargarAlumnos)
   gap: 8px;
 }
 
-.carrera-columna {
-  min-width: 380px;
+.nombre-columna {
+  min-width: 280px !important;
   padding: 0 !important;
+  overflow: visible !important;
+}
+
+.nombre-header-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  width: 100%;
+  overflow: visible;
+}
+
+.nombre-header-control span {
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.nombre-header-control select {
+  min-width: 110px;
+  max-width: 150px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  border: 1px solid #999;
+  border-radius: 3px;
+  background-color: white;
+  cursor: pointer;
+  display: inline-block;
+  visibility: visible;
+  overflow: visible;
+}
+
+.carrera-columna {
+  min-width: 275px !important;
+  padding: 0 !important;
+  overflow: visible !important;
 }
 
 .carrera-header-control {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 8px;
+  gap: 6px;
+  padding: 6px 4px;
   width: 100%;
+  overflow: visible;
 }
 
 .carrera-header-control span {
   font-weight: 600;
   white-space: nowrap;
-  min-width: 80px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .carrera-header-control select {
-  min-width: 180px;
-  padding: 6px 10px;
-  font-size: 0.9rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  min-width: 110px;
+  max-width: 150px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  border: 1px solid #999;
+  border-radius: 3px;
   background-color: white;
   cursor: pointer;
+  display: inline-block;
+  visibility: visible;
+  overflow: visible;
 }
 </style>
