@@ -34,12 +34,7 @@
                     :class="{ 'is-invalid': errores.carrera }"
                     v-model="nuevoAlumno.carrera">
               <option value="" disabled>Seleccione una carrera</option>
-              <option value="Ingeniería en Sistemas Computacionales">Ingeniería en Sistemas Computacionales</option>
-              <option value="Ingeniería Industrial">Ingeniería Industrial</option>
-              <option value="Licenciatura en Contaduría">Licenciatura en Contaduría</option>
-              <option value="Licenciatura en Administración">Licenciatura en Administración</option>
-              <option value="Ingeniería en Mecatrónica">Ingeniería en Mecatrónica</option>
-              <option value="Ingeniería en Gestión Empresarial">Ingeniería en Gestión</option>
+              <option v-for="carrera in carreras" :key="carrera" :value="carrera">{{ carrera }}</option>
             </select>
           </div>
 
@@ -74,14 +69,22 @@
               <!-- ❌ ID eliminado -->
               <th style="width:20%">Nombre</th>
               <th style="width:20%">Apellidos</th>
-              <th style="width:30%">Carrera</th>
+              <th style="width:30%" class="carrera-columna">
+                <div class="carrera-header-control">
+                  <span>Carrera</span>
+                  <select class="form-select form-select-sm" v-model="carreraSeleccionada" aria-label="Filtrar por carrera">
+                    <option value="">Todas</option>
+                    <option v-for="carrera in carrerasDisponibles" :key="`filtro-${carrera}`" :value="carrera">{{ carrera }}</option>
+                  </select>
+                </div>
+              </th>
               <th style="width:20%">Teléfono</th>
               <th class="acciones-columna">Acciones</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-for="alumno in alumnos" :key="alumno.id">
+            <tr v-for="alumno in alumnosFiltrados" :key="alumno.id">
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
@@ -93,6 +96,9 @@
                 </div>
               </td>
             </tr>
+            <tr v-if="alumnosFiltrados.length === 0">
+              <td colspan="5" class="text-muted">No hay alumnos para la carrera seleccionada.</td>
+            </tr>
           </tbody>
         </table>
         </div>
@@ -103,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import Swal from 'sweetalert2'
 import { db } from './firebase'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
@@ -122,8 +128,30 @@ const editado = ref(false)
 const errores = ref({})
 const alumnosRef = collection(db, 'alumnos')
 const PROPER_CASE_WORDS_RX = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*$/
+const carreras = [
+  'Ingeniería en Sistemas Computacionales',
+  'Ingeniería Industrial',
+  'Licenciatura en Contaduría',
+  'Licenciatura en Administración',
+  'Ingeniería en Mecatrónica',
+  'Ingeniería en Gestión Empresarial'
+]
+const carreraSeleccionada = ref('')
 
 const normalizeWords = (text) => (text || '').trim().replace(/\s+/g, ' ')
+const carrerasDisponibles = computed(() => {
+  const carrerasUnicas = new Set(
+    alumnos.value
+      .map((alumno) => (alumno.carrera || '').trim())
+      .filter(Boolean)
+  )
+  return [...carrerasUnicas].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+})
+
+const alumnosFiltrados = computed(() => {
+  if (!carreraSeleccionada.value) return alumnos.value
+  return alumnos.value.filter((alumno) => alumno.carrera === carreraSeleccionada.value)
+})
 
 // =====================
 // Cargar alumnos
@@ -290,5 +318,20 @@ onMounted(cargarAlumnos)
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.carrera-columna {
+  min-width: 260px;
+}
+
+.carrera-header-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.carrera-header-control select {
+  min-width: 130px;
 }
 </style>
