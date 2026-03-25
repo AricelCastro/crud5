@@ -4,7 +4,7 @@
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
       <h2 class="text-center mb-3">Formulario de Alumnos</h2>
-      <form @submit.prevent="agregarAlumno">
+      <form @submit.prevent="agregarAlumno" autocomplete="off">
         <div class="row g-2">
 
           <!-- Nombre -->
@@ -70,10 +70,19 @@
               <th style="width:28%" class="nombre-columna">
                 <div class="nombre-header-control">
                   <span>Nombre</span>
-                  <select class="form-select" v-model="alumnoSeleccionado" aria-label="Filtrar por alumno">
-                    <option value="">Todos</option>
-                    <option v-for="alumno in nombresDisponibles" :key="`filtro-${alumno.id}`" :value="alumno.id">{{ alumno.nombre }} {{ alumno.apellido }}</option>
-                  </select>
+                  <input
+                    type="search"
+                    class="form-control form-control-sm nombre-busqueda-input"
+                    v-model="busquedaNombre"
+                    @keydown.stop
+                    placeholder="Buscar alumno (sin menu)"
+                    aria-label="Buscar alumno por nombre o apellido"
+                    autocomplete="new-password"
+                    spellcheck="false"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    name="q_alumno_manual"
+                  >
                 </div>
               </th>
               <th style="width:12%">Apellidos</th>
@@ -81,7 +90,7 @@
                 <div class="carrera-header-control">
                   <span>Carrera</span>
                   <select class="form-select" v-model="carreraSeleccionada" aria-label="Filtrar por carrera">
-                    <option value="">carreras</option>
+                    <option value="">Todas las carreras</option>
                     <option v-for="carrera in carrerasDisponibles" :key="`filtro-${carrera}`" :value="carrera">{{ carrera }}</option>
                   </select>
                 </div>
@@ -145,9 +154,18 @@ const carreras = [
   'Ingeniería en Gestión Empresarial'
 ]
 const carreraSeleccionada = ref('')
-const alumnoSeleccionado = ref('')
+const busquedaNombre = ref('')
 
 const normalizeWords = (text) => (text || '').trim().replace(/\s+/g, ' ')
+const normalizeSearch = (text) =>
+  (text || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+
 const carrerasDisponibles = computed(() => {
   const carrerasUnicas = new Set(
     alumnos.value
@@ -157,12 +175,6 @@ const carrerasDisponibles = computed(() => {
   return [...carrerasUnicas].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
 })
 
-const nombresDisponibles = computed(() => {
-  return alumnos.value
-    .map((alumno) => ({ id: alumno.id, nombre: alumno.nombre, apellido: alumno.apellido }))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-})
-
 const alumnosFiltrados = computed(() => {
   let resultado = alumnos.value
 
@@ -170,8 +182,12 @@ const alumnosFiltrados = computed(() => {
     resultado = resultado.filter((alumno) => alumno.carrera === carreraSeleccionada.value)
   }
 
-  if (alumnoSeleccionado.value) {
-    resultado = resultado.filter((alumno) => alumno.id === alumnoSeleccionado.value)
+  const termino = normalizeSearch(busquedaNombre.value)
+  if (termino) {
+    resultado = resultado.filter((alumno) => {
+      const nombreCompleto = normalizeSearch(`${alumno.nombre || ''} ${alumno.apellido || ''}`)
+      return nombreCompleto.includes(termino)
+    })
   }
 
   return resultado
@@ -360,7 +376,8 @@ onMounted(cargarAlumnos)
 
 .nombre-header-control {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  flex-direction: column;
   gap: 6px;
   padding: 6px 4px;
   width: 100%;
@@ -374,15 +391,15 @@ onMounted(cargarAlumnos)
   flex-shrink: 0;
 }
 
-.nombre-header-control select {
-  min-width: 110px;
-  max-width: 150px;
+.nombre-busqueda-input {
+  width: 100%;
+  min-width: 200px;
   padding: 3px 6px;
   font-size: 0.75rem;
   border: 1px solid #999;
   border-radius: 3px;
   background-color: white;
-  cursor: pointer;
+  cursor: text;
   display: inline-block;
   visibility: visible;
   overflow: visible;
