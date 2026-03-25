@@ -75,7 +75,7 @@
                     class="form-control form-control-sm nombre-busqueda-input"
                     v-model="busquedaNombre"
                     @keydown.stop
-                    placeholder="Buscar alumno (sin menu)"
+                    placeholder="Buscar alumno"
                     aria-label="Buscar alumno por nombre o apellido"
                     autocomplete="new-password"
                     spellcheck="false"
