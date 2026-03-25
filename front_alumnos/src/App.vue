@@ -72,8 +72,8 @@
               <th style="width:30%" class="carrera-columna">
                 <div class="carrera-header-control">
                   <span>Carrera</span>
-                  <select class="form-select form-select-sm" v-model="carreraSeleccionada" aria-label="Filtrar por carrera">
-                    <option value="">Todas</option>
+                  <select class="form-select" v-model="carreraSeleccionada" aria-label="Filtrar por carrera">
+                    <option value="">Todas las carreras</option>
                     <option v-for="carrera in carrerasDisponibles" :key="`filtro-${carrera}`" :value="carrera">{{ carrera }}</option>
                   </select>
                 </div>
@@ -321,17 +321,32 @@ onMounted(cargarAlumnos)
 }
 
 .carrera-columna {
-  min-width: 260px;
+  min-width: 380px;
+  padding: 0 !important;
 }
 
 .carrera-header-control {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
+  padding: 12px 8px;
+  width: 100%;
+}
+
+.carrera-header-control span {
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 80px;
 }
 
 .carrera-header-control select {
-  min-width: 130px;
+  min-width: 180px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
 }
 </style>
