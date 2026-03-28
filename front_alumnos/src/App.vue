@@ -70,19 +70,17 @@
               <th style="width:28%" class="nombre-columna">
                 <div class="nombre-header-control">
                   <span>Nombre</span>
-                  <input
-                    type="search"
-                    class="form-control form-control-sm nombre-busqueda-input"
-                    v-model="busquedaNombre"
-                    @keydown.stop
-                    placeholder="Buscar alumno"
-                    aria-label="Buscar alumno por nombre o apellido"
-                    autocomplete="new-password"
-                    spellcheck="false"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    name="q_alumno_manual"
-                  >
+                  <div class="nombre-controles">
+                    <select
+                      class="form-select form-select-sm nombre-select"
+                      v-model="busquedaNombre"
+                      @change="$event.target.blur()"
+                      aria-label="Filtrar alumno por nombre"
+                    >
+                      <option value="">Todos los alumnos</option>
+                      <option v-for="nombre in nombresDisponibles" :key="nombre" :value="nombre">{{ nombre }}</option>
+                    </select>
+                  </div>
                 </div>
               </th>
               <th style="width:12%">Apellidos</th>
@@ -173,6 +171,15 @@ const carrerasDisponibles = computed(() => {
       .filter(Boolean)
   )
   return [...carrerasUnicas].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+})
+
+const nombresDisponibles = computed(() => {
+  const nombresUnicos = new Set(
+    alumnos.value
+      .map((alumno) => normalizeWords(`${alumno.nombre || ''} ${alumno.apellido || ''}`))
+      .filter(Boolean)
+  )
+  return [...nombresUnicos].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
 })
 
 const alumnosFiltrados = computed(() => {
@@ -376,9 +383,9 @@ onMounted(cargarAlumnos)
 
 .nombre-header-control {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   padding: 6px 4px;
   width: 100%;
   overflow: visible;
@@ -389,20 +396,29 @@ onMounted(cargarAlumnos)
   white-space: nowrap;
   font-size: 0.85rem;
   flex-shrink: 0;
+  width: 100%;
+  text-align: left;
 }
 
-.nombre-busqueda-input {
+.nombre-controles {
+  display: flex;
+  gap: 4px;
   width: 100%;
-  min-width: 200px;
-  padding: 3px 6px;
+  align-items: center;
+}
+
+.nombre-select {
+  flex: 1;
+  min-width: 80px;
+  padding: 4px 6px;
   font-size: 0.75rem;
   border: 1px solid #999;
   border-radius: 3px;
   background-color: white;
-  cursor: text;
-  display: inline-block;
+  cursor: pointer;
+  display: block;
   visibility: visible;
-  overflow: visible;
+  height: 28px;
 }
 
 .carrera-columna {
