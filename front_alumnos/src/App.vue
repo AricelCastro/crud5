@@ -99,7 +99,7 @@
           </thead>
 
           <tbody>
-            <tr v-for="alumno in alumnosFiltrados" :key="alumno.id">
+            <tr v-for="alumno in alumnosPaginados" :key="alumno.id">
               <td>{{ alumno.nombre }}</td>
               <td>{{ alumno.apellido }}</td>
               <td>{{ alumno.carrera }}</td>
@@ -116,6 +116,30 @@
             </tr>
           </tbody>
         </table>
+        </div>
+
+        <div v-if="alumnosFiltrados.length > 0" class="paginacion-contenedor mt-3">
+          <small class="text-muted">
+            Mostrando {{ inicioRegistro }}-{{ finRegistro }} de {{ alumnosFiltrados.length }} registros
+          </small>
+          <nav aria-label="Paginación de alumnos">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <button class="page-link" type="button" @click="irPagina(currentPage - 1)" :disabled="currentPage === 1">Anterior</button>
+              </li>
+              <li
+                v-for="page in paginasVisibles"
+                :key="page"
+                class="page-item"
+                :class="{ active: page === currentPage }"
+              >
+                <button class="page-link" type="button" @click="irPagina(page)">{{ page }}</button>
+              </li>
+              <li class="page-item" :class="{ disabled: currentPage === totalPaginas }">
+                <button class="page-link" type="button" @click="irPagina(currentPage + 1)" :disabled="currentPage === totalPaginas">Siguiente</button>
+              </li>
+            </ul>
+          </nav>
         </div>
 
       </div>
@@ -153,6 +177,8 @@ const carreras = [
 ]
 const carreraSeleccionada = ref('')
 const busquedaNombre = ref('')
+const currentPage = ref(1)
+const PAGE_SIZE = 10
 
 const normalizeWords = (text) => (text || '').trim().replace(/\s+/g, ' ')
 const normalizeSearch = (text) =>
@@ -199,6 +225,43 @@ const alumnosFiltrados = computed(() => {
 
   return resultado
 })
+
+const totalPaginas = computed(() => Math.max(1, Math.ceil(alumnosFiltrados.value.length / PAGE_SIZE)))
+
+const alumnosPaginados = computed(() => {
+  const inicio = (currentPage.value - 1) * PAGE_SIZE
+  return alumnosFiltrados.value.slice(inicio, inicio + PAGE_SIZE)
+})
+
+const paginasVisibles = computed(() => {
+  const pages = []
+  for (let i = 1; i <= totalPaginas.value; i += 1) {
+    pages.push(i)
+  }
+  return pages
+})
+
+const inicioRegistro = computed(() => {
+  if (alumnosFiltrados.value.length === 0) return 0
+  return (currentPage.value - 1) * PAGE_SIZE + 1
+})
+
+const finRegistro = computed(() => {
+  if (alumnosFiltrados.value.length === 0) return 0
+  return Math.min(currentPage.value * PAGE_SIZE, alumnosFiltrados.value.length)
+})
+
+const irPagina = (page) => {
+  if (page < 1) {
+    currentPage.value = 1
+    return
+  }
+  if (page > totalPaginas.value) {
+    currentPage.value = totalPaginas.value
+    return
+  }
+  currentPage.value = page
+}
 
 // =====================
 // Cargar alumnos
@@ -251,6 +314,16 @@ watch(() => nuevoAlumno.value.telefono, (val) => {
   let soloNumeros = val.replace(/\D/g, '')
   if (!soloNumeros.startsWith('52')) soloNumeros = '+52' + soloNumeros
   nuevoAlumno.value.telefono = soloNumeros
+})
+
+watch([carreraSeleccionada, busquedaNombre], () => {
+  currentPage.value = 1
+})
+
+watch(alumnosFiltrados, () => {
+  if (currentPage.value > totalPaginas.value) {
+    currentPage.value = totalPaginas.value
+  }
 })
 
 // =====================
@@ -455,5 +528,13 @@ onMounted(cargarAlumnos)
   display: inline-block;
   visibility: visible;
   overflow: visible;
+}
+
+.paginacion-contenedor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 </style>
