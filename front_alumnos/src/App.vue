@@ -71,15 +71,17 @@
                 <div class="nombre-header-control">
                   <span>Nombre</span>
                   <div class="nombre-controles">
-                    <select
-                      class="form-select form-select-sm nombre-select"
+                    <input
+                      list="lista-nombres"
+                      type="search"
+                      class="form-control form-control-sm nombre-select"
                       v-model="busquedaNombre"
-                      @change="$event.target.blur()"
-                      aria-label="Filtrar alumno por nombre"
+                      placeholder="Buscar o seleccionar alumno"
+                      aria-label="Buscar o seleccionar alumno por nombre"
                     >
-                      <option value="">Todos los alumnos</option>
+                    <datalist id="lista-nombres">
                       <option v-for="nombre in nombresDisponibles" :key="nombre" :value="nombre">{{ nombre }}</option>
-                    </select>
+                    </datalist>
                   </div>
                 </div>
               </th>
@@ -488,7 +490,7 @@ onMounted(cargarAlumnos)
   border: 1px solid #999;
   border-radius: 3px;
   background-color: white;
-  cursor: pointer;
+  cursor: text;
   display: block;
   visibility: visible;
   height: 28px;
