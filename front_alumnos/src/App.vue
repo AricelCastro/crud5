@@ -1,8 +1,42 @@
 <template>
-  <div class="container" style="max-width:1000px"> <!-- MÁS ANCHO -->
+  <div v-if="!isAuthenticated" class="container" style="max-width:520px">
+    <div class="card shadow p-4 mt-5">
+      <h2 class="text-center mb-3">Iniciar sesión</h2>
+      <form @submit.prevent="iniciarSesion" autocomplete="off">
+        <div class="mb-3">
+          <label class="form-label">Usuario</label>
+          <input
+            type="text"
+            class="form-control"
+            v-model="credenciales.usuario"
+            placeholder="Ingresa tu usuario"
+          >
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <input
+            type="password"
+            class="form-control"
+            v-model="credenciales.password"
+            placeholder="Ingresa tu contraseña"
+          >
+        </div>
+
+        <p v-if="errorLogin" class="text-danger mb-2">{{ errorLogin }}</p>
+
+        <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+      </form>
+    </div>
+  </div>
+
+  <div v-else class="container" style="max-width:1000px"> <!-- MÁS ANCHO -->
     
     <!-- Formulario -->
     <div class="card shadow p-3 mt-4">
+      <div class="d-flex justify-content-end mb-2">
+        <button type="button" class="btn btn-outline-danger btn-sm" @click="cerrarSesion">Cerrar sesión</button>
+      </div>
       <h2 class="text-center mb-3">Formulario de Alumnos</h2>
       <form @submit.prevent="agregarAlumno" autocomplete="off">
         <div class="row g-2">
@@ -156,6 +190,12 @@ import { db } from './firebase'
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
 
 const alumnos = ref([])
+const isAuthenticated = ref(false)
+const credenciales = ref({ usuario: '', password: '' })
+const errorLogin = ref('')
+
+const APP_USER = 'admin'
+const APP_PASS = '123456'
 
 const nuevoAlumno = ref({
   id: null,
@@ -263,6 +303,31 @@ const irPagina = (page) => {
     return
   }
   currentPage.value = page
+}
+
+const iniciarSesion = async () => {
+  const usuario = (credenciales.value.usuario || '').trim()
+  const password = credenciales.value.password || ''
+
+  if (!usuario || !password) {
+    errorLogin.value = 'Ingresa usuario y contraseña.'
+    return
+  }
+
+  if (usuario !== APP_USER || password !== APP_PASS) {
+    errorLogin.value = 'Usuario o contraseña incorrectos.'
+    return
+  }
+
+  errorLogin.value = ''
+  isAuthenticated.value = true
+  await cargarAlumnos()
+}
+
+const cerrarSesion = () => {
+  isAuthenticated.value = false
+  credenciales.value = { usuario: '', password: '' }
+  errorLogin.value = ''
 }
 
 // =====================
@@ -415,7 +480,9 @@ const formatTelefono = (num) => {
   return '+52 ' + n.slice(0,3) + ' ' + n.slice(3,6) + ' ' + n.slice(6,10)
 }
 
-onMounted(cargarAlumnos)
+onMounted(() => {
+  if (isAuthenticated.value) cargarAlumnos()
+})
 </script>
 
 <style scoped>
