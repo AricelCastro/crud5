@@ -1,32 +1,42 @@
 <template>
-  <div v-if="!isAuthenticated" class="container" style="max-width:520px">
-    <div class="card shadow p-4 mt-5">
-      <h2 class="text-center mb-3">Iniciar sesión</h2>
-      <form @submit.prevent="iniciarSesion" autocomplete="off">
-        <div class="mb-3">
-          <label class="form-label">Usuario</label>
-          <input
-            type="text"
-            class="form-control"
-            v-model="credenciales.usuario"
-            placeholder="Ingresa tu usuario"
-          >
-        </div>
+  <!-- LOGIN -->
+  <div v-if="!isAuthenticated && vista === 'login'" class="container mt-5" style="max-width:400px">
+    <div class="card shadow p-4">
+      <h3 class="text-center mb-3">Iniciar Sesión</h3>
 
-        <div class="mb-3">
-          <label class="form-label">Contraseña</label>
-          <input
-            type="password"
-            class="form-control"
-            v-model="credenciales.password"
-            placeholder="Ingresa tu contraseña"
-          >
-        </div>
+      <input type="text" class="form-control mb-2" placeholder="Usuario" maxlength="8" v-model="usuario">
+      <small class="text-danger" v-if="erroresLogin.user">{{ erroresLogin.user }}</small>
+      <input type="password" class="form-control mb-3" placeholder="Contraseña" maxlength="8" v-model="password">
+      <small class="text-danger" v-if="erroresLogin.pass">{{ erroresLogin.pass }}</small>
 
-        <p v-if="errorLogin" class="text-danger mb-2">{{ errorLogin }}</p>
+      <button class="btn btn-primary w-100 mb-2" @click="login">Ingresar</button>
 
-        <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
-      </form>
+      <button class="btn btn-outline-secondary w-100" @click="vista = 'registro'">
+        Crear cuenta
+      </button>
+    </div>
+  </div>
+
+  <!-- REGISTRO -->
+  <div v-else-if="!isAuthenticated && vista === 'registro'" class="container mt-5" style="max-width:400px">
+    <div class="card shadow p-4">
+      <h3 class="text-center mb-3">Crear Usuario</h3>
+
+      <input type="text" class="form-control mb-2" placeholder="Nuevo usuario" maxlength="8" v-model="nuevoUsuario.user">
+      <div class="form-text mb-2">Usuario entre 4 y 8 caracteres.</div>
+      <small class="text-danger" v-if="erroresRegistro.user">{{ erroresRegistro.user }}</small>
+
+      <input type="password" class="form-control mb-2" placeholder="Nueva contraseña" maxlength="8" v-model="nuevoUsuario.pass">
+      <div class="form-text mb-2">La contraseña debe tener entre 4 y 8 caracteres.</div>
+      <small class="text-danger" v-if="erroresRegistro.pass">{{ erroresRegistro.pass }}</small>
+
+      <button class="btn btn-success w-100 mb-2" @click="registrar">
+        Registrarse
+      </button>
+
+      <button class="btn btn-outline-secondary w-100" @click="vista = 'login'">
+        Volver al login
+      </button>
     </div>
   </div>
 
@@ -191,11 +201,14 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase
 
 const alumnos = ref([])
 const isAuthenticated = ref(false)
-const credenciales = ref({ usuario: '', password: '' })
-const errorLogin = ref('')
-
-const APP_USER = 'admin'
-const APP_PASS = '123456'
+const vista = ref('login')
+const usuario = ref('')
+const password = ref('')
+const nuevoUsuario = ref({ user: '', pass: '' })
+const erroresLogin = ref({ user: '', pass: '' })
+const erroresRegistro = ref({ user: '', pass: '' })
+const usuariosRegistrados = ref([])
+const STORAGE_USERS_KEY = 'crud4_users'
 
 const nuevoAlumno = ref({
   id: null,
@@ -305,29 +318,85 @@ const irPagina = (page) => {
   currentPage.value = page
 }
 
-const iniciarSesion = async () => {
-  const usuario = (credenciales.value.usuario || '').trim()
-  const password = credenciales.value.password || ''
+const cargarUsuarios = () => {
+  const base = [{ user: 'admin', pass: '123456' }]
+  try {
+    const raw = localStorage.getItem(STORAGE_USERS_KEY)
+    if (!raw) {
+      usuariosRegistrados.value = base
+      localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(base))
+      return
+    }
 
-  if (!usuario || !password) {
-    errorLogin.value = 'Ingresa usuario y contraseña.'
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      usuariosRegistrados.value = base
+      localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(base))
+      return
+    }
+
+    usuariosRegistrados.value = parsed
+  } catch {
+    usuariosRegistrados.value = base
+    localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(base))
+  }
+}
+
+const login = async () => {
+  erroresLogin.value = { user: '', pass: '' }
+  const user = (usuario.value || '').trim()
+  const pass = (password.value || '').trim()
+
+  if (!user) erroresLogin.value.user = 'El usuario es obligatorio.'
+  else if (user.length < 4 || user.length > 8) erroresLogin.value.user = 'Debe tener entre 4 y 8 caracteres.'
+
+  if (!pass) erroresLogin.value.pass = 'La contraseña es obligatoria.'
+  else if (pass.length < 4 || pass.length > 8) erroresLogin.value.pass = 'Debe tener entre 4 y 8 caracteres.'
+
+  if (erroresLogin.value.user || erroresLogin.value.pass) return
+
+  const existe = usuariosRegistrados.value.some((u) => u.user === user && u.pass === pass)
+  if (!existe) {
+    erroresLogin.value.pass = 'Usuario o contraseña incorrectos.'
     return
   }
 
-  if (usuario !== APP_USER || password !== APP_PASS) {
-    errorLogin.value = 'Usuario o contraseña incorrectos.'
-    return
-  }
-
-  errorLogin.value = ''
   isAuthenticated.value = true
   await cargarAlumnos()
 }
 
+const registrar = () => {
+  erroresRegistro.value = { user: '', pass: '' }
+  const user = (nuevoUsuario.value.user || '').trim()
+  const pass = (nuevoUsuario.value.pass || '').trim()
+
+  if (!user) erroresRegistro.value.user = 'El usuario es obligatorio.'
+  else if (user.length < 4 || user.length > 8) erroresRegistro.value.user = 'Debe tener entre 4 y 8 caracteres.'
+
+  if (!pass) erroresRegistro.value.pass = 'La contraseña es obligatoria.'
+  else if (pass.length < 4 || pass.length > 8) erroresRegistro.value.pass = 'Debe tener entre 4 y 8 caracteres.'
+
+  if (erroresRegistro.value.user || erroresRegistro.value.pass) return
+
+  const yaExiste = usuariosRegistrados.value.some((u) => u.user === user)
+  if (yaExiste) {
+    erroresRegistro.value.user = 'Ese usuario ya existe.'
+    return
+  }
+
+  usuariosRegistrados.value.push({ user, pass })
+  localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(usuariosRegistrados.value))
+  nuevoUsuario.value = { user: '', pass: '' }
+  vista.value = 'login'
+  Swal.fire({ icon: 'success', title: 'Usuario creado', timer: 1400, showConfirmButton: false })
+}
+
 const cerrarSesion = () => {
   isAuthenticated.value = false
-  credenciales.value = { usuario: '', password: '' }
-  errorLogin.value = ''
+  usuario.value = ''
+  password.value = ''
+  erroresLogin.value = { user: '', pass: '' }
+  vista.value = 'login'
 }
 
 // =====================
@@ -481,6 +550,7 @@ const formatTelefono = (num) => {
 }
 
 onMounted(() => {
+  cargarUsuarios()
   if (isAuthenticated.value) cargarAlumnos()
 })
 </script>
