@@ -75,16 +75,22 @@ export default function useAlumnosListController(navigation) {
   const requestDelete = (alumno) => setDeleteState({ open: true, alumno });
   const cancelDelete = () => setDeleteState({ open: false, alumno: null });
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (secret, verifyActionSecret) => {
     const id = deleteState.alumno?.id;
-    if (!id) return cancelDelete();
+    if (!id) {
+      cancelDelete();
+      return false;
+    }
+    if (!verifyActionSecret?.(secret)) return false;
     try {
       setBusy(true);
       await eliminarAlumno(id);
       await fetchAlumnos();
       setMsg('Alumno eliminado');
+      return true;
     } catch {
       setMsg('No se pudo eliminar');
+      return false;
     } finally {
       setBusy(false);
       cancelDelete();

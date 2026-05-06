@@ -3,8 +3,13 @@ import { View, FlatList, RefreshControl } from 'react-native';
 import { Appbar, Snackbar, ActivityIndicator, Card, IconButton, Text, Chip, FAB } from 'react-native-paper';
 import ConfirmDeleteDialog from '../Components/ConfirmDeleteModal';
 import useAlumnosListController from '../Hooks/useAlumnosList';
+import { AuthContext } from '../Services/AuthContext';
 
 export default function ListaScreen({ navigation }) {
+  const auth = React.useContext(AuthContext);
+  if (!auth) throw new Error('AuthProvider no envuelve la app.');
+  const { verifyActionSecret } = auth;
+
   const {
     local, loading, busy, refreshing,
     msg, setMsg,
@@ -76,9 +81,10 @@ export default function ListaScreen({ navigation }) {
       <ConfirmDeleteDialog
         visible={deleteState.open}
         title="Eliminar registro"
-        body={`¿Deseas eliminar a ${deleteState.alumno?.nombre ?? 'este alumno'}? Esta acción no se puede deshacer.`}
+        body={`Vas a eliminar este registro: ${deleteState.alumno?.nombre ?? 'alumno seleccionado'}. Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
         onCancel={cancelDelete}
-        onConfirm={confirmDelete}
+        onConfirm={(secret) => confirmDelete(secret, verifyActionSecret)}
       />
 
       <Snackbar visible={!!msg} onDismiss={() => setMsg('')}>

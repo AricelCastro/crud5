@@ -1,5 +1,6 @@
 package com.israel.alumnos.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,12 +13,19 @@ public class Alumno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "numero_control")
     private String numeroControl;
+    
     private String nombre;
     private String apellido;
     private String telefono;
     private String email;
     private String carrera;
+    private String materia;
+    private String grupo;
+    private String horario;
+    
+    @Column(name = "imagen_url")
     private String imagenURL;
 
     public Long getId() {
@@ -74,6 +82,30 @@ public class Alumno {
 
     public void setCarrera(String carrera) {
         this.carrera = carrera;
+    }
+
+    public String getMateria() {
+        return materia;
+    }
+
+    public void setMateria(String materia) {
+        this.materia = materia;
+    }
+
+    public String getGrupo() {
+        return grupo;
+    }
+
+    public void setGrupo(String grupo) {
+        this.grupo = grupo;
+    }
+
+    public String getHorario() {
+        return horario;
+    }
+
+    public void setHorario(String horario) {
+        this.horario = horario;
     }
 
     public String getImagenURL() {

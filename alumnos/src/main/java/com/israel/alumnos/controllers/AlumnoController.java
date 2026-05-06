@@ -27,6 +27,11 @@ public class AlumnoController {
     private AlumnoRepository alumnoRepository;
 
     // Metodo get para traer todos los alumnos de la base de datos
+    @GetMapping({ "", "/" })
+    public List<Alumno> TraerAlumnosRoot() {
+        return alumnoRepository.findAll();
+    }
+
     @GetMapping("/traer-alumnos")
     public List<Alumno> TraerAlumnos() {
         return alumnoRepository.findAll();
@@ -56,6 +61,10 @@ public class AlumnoController {
             alumnoExistente.setNumeroControl(alumno.getNumeroControl());
             alumnoExistente.setTelefono(alumno.getTelefono());
             alumnoExistente.setCarrera(alumno.getCarrera());
+            alumnoExistente.setMateria(alumno.getMateria());
+            alumnoExistente.setGrupo(alumno.getGrupo());
+            alumnoExistente.setHorario(alumno.getHorario());
+            alumnoExistente.setImagenURL(alumno.getImagenURL());
             Alumno actualizado = alumnoRepository.save(alumnoExistente);
             return ResponseEntity.ok(actualizado);
         }).orElse(ResponseEntity.notFound().build());
